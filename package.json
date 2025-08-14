@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "classnames": "^2.5.1",
@@ -24,6 +25,10 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.31",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@testing-library/react": "^15.0.0",
+    "@testing-library/jest-dom": "^6.2.0",
+    "vitest": "^1.5.0",
+    "jsdom": "^24.0.0"
   }
 }
