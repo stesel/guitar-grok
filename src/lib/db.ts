@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Exercise, Session, Attempt } from '@/utils/guitar';
+import { createClient } from "@supabase/supabase-js";
+import type { Exercise, Session, Attempt } from "@/src/utils/guitar";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
-  throw new Error('Missing Supabase environment variables');
+  throw new Error("Missing Supabase environment variables");
 }
 
 export const supabase = createClient(url, anonKey);
@@ -33,7 +33,7 @@ function mapExercise(row: ExerciseRow): Exercise {
     bpmMax: row.bpm_max,
     key: row.key,
     estMinutes: row.est_minutes,
-    difficulty: row.difficulty as Exercise['difficulty'],
+    difficulty: row.difficulty as Exercise["difficulty"],
     notes: row.notes ?? undefined,
     tags: row.tags ?? [],
     createdAt: row.created_at,
@@ -42,20 +42,24 @@ function mapExercise(row: ExerciseRow): Exercise {
 }
 
 export async function getExercises(): Promise<Exercise[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
   const { data, error } = await supabase
-    .from('exercises')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .from("exercises")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
   if (error || !data) return [];
   return (data as ExerciseRow[]).map(mapExercise);
 }
 
 export async function upsertExercise(ex: Exercise): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('No user');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No user");
   const row: ExerciseRow = {
     id: ex.id,
     user_id: user.id,
@@ -70,7 +74,7 @@ export async function upsertExercise(ex: Exercise): Promise<void> {
     created_at: ex.createdAt,
     updated_at: ex.updatedAt,
   };
-  const { error } = await supabase.from('exercises').upsert(row);
+  const { error } = await supabase.from("exercises").upsert(row);
   if (error) throw error;
 }
 
@@ -79,7 +83,7 @@ type SessionRow = {
   user_id: string;
   date: string;
   total_planned: number;
-  items: Session['items'];
+  items: Session["items"];
   created_at: string;
 };
 
@@ -93,20 +97,24 @@ function mapSession(row: SessionRow): Session {
 }
 
 export async function getSessions(): Promise<Session[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
   const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('date', { ascending: false });
+    .from("sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("date", { ascending: false });
   if (error || !data) return [];
   return (data as SessionRow[]).map(mapSession);
 }
 
 export async function insertSession(sess: Session): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('No user');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No user");
   const row: SessionRow = {
     id: sess.id,
     user_id: user.id,
@@ -115,7 +123,7 @@ export async function insertSession(sess: Session): Promise<void> {
     items: sess.items,
     created_at: new Date().toISOString(),
   };
-  const { error } = await supabase.from('sessions').insert(row);
+  const { error } = await supabase.from("sessions").insert(row);
   if (error) throw error;
 }
 
@@ -134,27 +142,31 @@ function mapAttempt(row: AttemptRow): Attempt {
     id: row.id,
     exerciseId: row.exercise_id,
     bpmUsed: row.bpm_used,
-    status: row.status as Attempt['status'],
+    status: row.status as Attempt["status"],
     timestamp: row.timestamp,
     notes: row.notes ?? undefined,
   };
 }
 
 export async function getAttempts(): Promise<Attempt[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
   const { data, error } = await supabase
-    .from('attempts')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('timestamp', { ascending: false });
+    .from("attempts")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("timestamp", { ascending: false });
   if (error || !data) return [];
   return (data as AttemptRow[]).map(mapAttempt);
 }
 
 export async function insertAttempt(a: Attempt): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('No user');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No user");
   const row: AttemptRow = {
     id: a.id,
     user_id: user.id,
@@ -164,6 +176,6 @@ export async function insertAttempt(a: Attempt): Promise<void> {
     timestamp: a.timestamp,
     notes: a.notes ?? null,
   };
-  const { error } = await supabase.from('attempts').insert(row);
+  const { error } = await supabase.from("attempts").insert(row);
   if (error) throw error;
 }
