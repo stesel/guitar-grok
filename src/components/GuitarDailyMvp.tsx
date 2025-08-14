@@ -8,17 +8,27 @@ import {
   Session,
   computeStreak,
   generateSession,
-  loadLS,
-  saveLS,
   seedExercises,
-  LS_KEYS,
+  uid,
 } from "@/utils/guitar";
+import {
+  getExercises,
+  getAttempts,
+  getSessions,
+  upsertExercise,
+  insertSession,
+  insertAttempt,
+  supabase,
+} from "@/lib/db";
+import type { User } from "@supabase/supabase-js";
 import Metronome from "./Metronome";
 
 export default function GuitarDailyMvp() {
-  const [exercises, setExercises] = useState<Exercise[]>(() => loadLS(LS_KEYS.exercises, seedExercises));
-  const [attempts, setAttempts] = useState<Attempt[]>(() => loadLS(LS_KEYS.attempts, [] as Attempt[]));
-  const [sessions, setSessions] = useState<Session[]>(() => loadLS(LS_KEYS.sessions, [] as Session[]));
+  const [user, setUser] = useState<User | null>(null);
+  const [email, setEmail] = useState("");
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [length, setLength] = useState(30);
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -27,9 +37,40 @@ export default function GuitarDailyMvp() {
 
   const streak = useMemo(() => computeStreak(attempts), [attempts]);
 
-  useEffect(() => saveLS(LS_KEYS.exercises, exercises), [exercises]);
-  useEffect(() => saveLS(LS_KEYS.attempts, attempts), [attempts]);
-  useEffect(() => saveLS(LS_KEYS.sessions, sessions), [sessions]);
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      const [exs, atts, sess] = await Promise.all([
+        getExercises(),
+        getAttempts(),
+        getSessions(),
+      ]);
+      if (exs.length === 0) {
+        for (const se of seedExercises) {
+          // seed default exercises
+          // eslint-disable-next-line no-await-in-loop
+          await upsertExercise(se);
+        }
+        setExercises(seedExercises);
+      } else {
+        setExercises(exs);
+      }
+      setAttempts(atts);
+      setSessions(sess);
+    })();
+  }, [user]);
 
   const activeExercise: Exercise | null = useMemo(() => {
     if (!currentSession) return null;
@@ -38,30 +79,14 @@ export default function GuitarDailyMvp() {
     return exercises.find((e) => e.id === item.exerciseId) || null;
   }, [currentSession, activeIndex, exercises]);
 
-  function addExercise(partial: Partial<Exercise>) {
-    const ex: Exercise = {
-      id: partial.id || Math.random().toString(),
-      title: partial.title?.trim() || "Untitled Exercise",
-      bpmMin: partial.bpmMin ?? 60,
-      bpmMax: partial.bpmMax ?? 120,
-      key: partial.key || "C",
-      estMinutes: partial.estMinutes ?? 3,
-      difficulty: (partial.difficulty as any) || "easy",
-      notes: partial.notes || "",
-      tags: partial.tags || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setExercises((prev) => [ex, ...prev]);
-  }
-
-  function startSession() {
+  async function startSession() {
     const sess = generateSession(exercises, length);
     setCurrentSession(sess);
     setSessions((prev) => [sess, ...prev]);
     setActiveIndex(0);
     const first = exercises.find((e) => e.id === sess.items[0]?.exerciseId);
     if (first) setBpm(Math.round((first.bpmMin + first.bpmMax) / 2));
+    await insertSession(sess);
   }
 
   function nextExercise() {
@@ -72,16 +97,47 @@ export default function GuitarDailyMvp() {
     setActiveIndex((i) => Math.max(i - 1, 0));
   }
 
-  function logAttempt(status: AttemptStatus) {
+  async function logAttempt(status: AttemptStatus) {
     if (!activeExercise) return;
     const a: Attempt = {
-      id: Math.random().toString(),
+      id: uid("att"),
       exerciseId: activeExercise.id,
       bpmUsed: bpm,
       status,
       timestamp: new Date().toISOString(),
     };
     setAttempts((prev) => [a, ...prev]);
+    await insertAttempt(a);
+  }
+
+  async function signIn(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await supabase.auth.signInWithOtp({ email });
+    setEmail("");
+  }
+
+  function signOut() {
+    void supabase.auth.signOut();
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <form onSubmit={signIn} className="space-y-3 p-6 rounded-xl border bg-white">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border rounded px-3 py-2 w-64"
+            placeholder="you@example.com"
+          />
+          <button type="submit" className="w-full rounded bg-indigo-600 px-4 py-2 text-white">
+            Send Magic Link
+          </button>
+        </form>
+      </div>
+    );
   }
 
   return (
@@ -97,6 +153,8 @@ export default function GuitarDailyMvp() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             <div className="hidden md:block">Streak: <span className="font-semibold">{streak.current}</span> (best {streak.best})</div>
+            <div className="hidden md:block">Sessions: {sessions.length}</div>
+            <button onClick={signOut} className="px-3 py-1 rounded-lg border hover:bg-slate-50">Sign out</button>
           </div>
         </div>
       </header>
@@ -115,7 +173,7 @@ export default function GuitarDailyMvp() {
                     <option value={60}>60 min</option>
                   </select>
                 </div>
-                <button onClick={startSession} className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700">Start Session</button>
+                <button onClick={() => void startSession()} className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700">Start Session</button>
                 {currentSession && (
                   <div className="text-sm text-slate-600">{currentSession.items.length} items · planned {currentSession.totalPlanned} min</div>
                 )}
@@ -173,9 +231,9 @@ export default function GuitarDailyMvp() {
                     </div>
 
                     <div className="space-y-2">
-                      <button onClick={() => logAttempt("done")} className="w-full px-3 py-2 rounded-lg bg-emerald-600 text-white">Mark Done</button>
-                      <button onClick={() => logAttempt("partial")} className="w-full px-3 py-2 rounded-lg bg-amber-500 text-white">Needs Work</button>
-                      <button onClick={() => logAttempt("fail")} className="w-full px-3 py-2 rounded-lg bg-rose-600 text-white">Couldn't Play</button>
+                      <button onClick={() => void logAttempt("done")} className="w-full px-3 py-2 rounded-lg bg-emerald-600 text-white">Mark Done</button>
+                      <button onClick={() => void logAttempt("partial")} className="w-full px-3 py-2 rounded-lg bg-amber-500 text-white">Needs Work</button>
+                      <button onClick={() => void logAttempt("fail")} className="w-full px-3 py-2 rounded-lg bg-rose-600 text-white">Couldn&apos;t Play</button>
                     </div>
                   </div>
 
