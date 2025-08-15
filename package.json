@@ -1,5 +1,5 @@
 {
-  "name": "guitar-daily",
+  "name": "guitar-grok",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -31,5 +31,10 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^1.5.0"
-  }
+  },
+  "engines": {
+    "node": "22.x",
+    "pnpm": "10.x"
+  },
+  "packageManager": "pnpm@10.14.0"
 }
