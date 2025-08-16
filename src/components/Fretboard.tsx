@@ -204,9 +204,15 @@ export default function Fretboard() {
                   <div
                     key={`${stringIdx}-${fret}`}
                     className={`flex items-center justify-center text-xs cursor-pointer select-none ${
-                      fret === 0 ? "bg-amber-900" : "bg-amber-800"
-                    } ${inScale ? "bg-green-600 text-white font-semibold" : "text-gray-400"} ${
-                      isCurrent ? "bg-orange-500 text-white" : ""
+                      isCurrent && inScale
+                        ? "bg-green-600 text-white font-semibold"
+                        : isCurrent
+                        ? "bg-orange-500 text-white"
+                        : inScale
+                        ? "bg-green-500 text-white font-semibold"
+                        : fret === 0
+                        ? "bg-amber-700 text-gray-700"
+                        : "bg-amber-600 text-gray-700"
                     }`}
                     onClick={() => {
                       playSound(note, stringIdx, fret);
