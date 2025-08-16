@@ -2,7 +2,20 @@
 
 import React, { useMemo, useRef, useState } from "react";
 
-const chromaticScale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
+const chromaticScale = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+] as const;
 
 const noteFrequencies: Record<string, number> = {
   C: 261.63,
@@ -48,7 +61,8 @@ function getFrequency(note: string, octave: number): number {
 }
 
 function buildScale(root: string, type: ScaleType): string[] {
-  const pattern = type === "major" ? [2, 2, 1, 2, 2, 2, 1] : [2, 1, 2, 2, 1, 2, 2];
+  const pattern =
+    type === "major" ? [2, 2, 1, 2, 2, 2, 1] : [2, 1, 2, 2, 1, 2, 2];
   const scale: string[] = [root];
   let idx = chromaticScale.indexOf(root as (typeof chromaticScale)[number]);
   for (const step of pattern) {
@@ -66,13 +80,17 @@ function getNoteAtFret(open: string, fret: number): string {
 export default function Fretboard() {
   const [root, setRoot] = useState<string>("E");
   const [scaleType, setScaleType] = useState<ScaleType>("minor");
-  const [current, setCurrent] = useState<{ string: number; fret: number } | null>(
-    null,
-  );
+  const [current, setCurrent] = useState<{
+    string: number;
+    fret: number;
+  } | null>(null);
   const intervalRef = useRef<number | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
 
-  const scaleNotes = useMemo(() => buildScale(root, scaleType), [root, scaleType]);
+  const scaleNotes = useMemo(
+    () => buildScale(root, scaleType),
+    [root, scaleType]
+  );
 
   function initAudio() {
     if (audioRef.current || typeof window === "undefined") return;
@@ -188,6 +206,7 @@ export default function Fretboard() {
           style={{
             gridTemplateColumns: "60px repeat(25, 40px)",
             gridTemplateRows: "repeat(6, 40px)",
+            width: "fit-content",
           }}
         >
           {tuning.map((s, stringIdx) => (
@@ -208,13 +227,13 @@ export default function Fretboard() {
                     ? "bg-orange-500 text-white"
                     : inScale
                     ? "bg-green-500 text-white font-semibold"
-                    : isOpen
-                    ? "bg-neutral-300 text-black font-semibold"
                     : "bg-amber-600 text-gray-700";
+                // Add white border to first fret (second column)
+                const borderClass = isOpen ? "border-r-4 border-white" : "";
                 return (
                   <div
                     key={`${stringIdx}-${fret}`}
-                    className={`flex items-center justify-center text-xs cursor-pointer select-none ${colorClass} ${isOpen ? "border-r-4 border-neutral-800" : ""}`}
+                    className={`flex items-center justify-center text-xs cursor-pointer select-none ${colorClass}  ${borderClass}`}
                     onClick={() => {
                       playSound(note, stringIdx, fret);
                       setCurrent({ string: stringIdx, fret });
@@ -231,4 +250,3 @@ export default function Fretboard() {
     </div>
   );
 }
-
