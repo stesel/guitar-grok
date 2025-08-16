@@ -162,7 +162,7 @@ export default function Fretboard() {
         <select
           value={root}
           onChange={(e) => setRoot(e.target.value)}
-          className="border rounded p-2 text-black"
+          className="border rounded p-2 text-white cursor-pointer"
         >
           {chromaticScale.map((n) => (
             <option key={n} value={n}>
@@ -173,7 +173,7 @@ export default function Fretboard() {
         <select
           value={scaleType}
           onChange={(e) => setScaleType(e.target.value as ScaleType)}
-          className="border rounded p-2 text-black"
+          className="border rounded p-2 text-white cursor-pointer"
         >
           <option value="major">Major</option>
           <option value="minor">Minor</option>
@@ -181,21 +181,21 @@ export default function Fretboard() {
         <button
           type="button"
           onClick={() => playSequence(true)}
-          className="bg-green-600 text-white px-3 py-2 rounded"
+          className="bg-green-600 text-white px-3 py-2 rounded cursor-pointer"
         >
           Play Ascending
         </button>
         <button
           type="button"
           onClick={() => playSequence(false)}
-          className="bg-green-600 text-white px-3 py-2 rounded"
+          className="bg-green-600 text-white px-3 py-2 rounded cursor-pointer"
         >
           Play Descending
         </button>
         <button
           type="button"
           onClick={stop}
-          className="bg-gray-600 text-white px-3 py-2 rounded"
+          className="bg-gray-600 text-white px-3 py-2 rounded cursor-pointer"
         >
           Stop
         </button>
