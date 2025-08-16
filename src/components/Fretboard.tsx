@@ -200,20 +200,21 @@ export default function Fretboard() {
                 const inScale = scaleNotes.includes(note);
                 const isCurrent =
                   current?.string === stringIdx && current?.fret === fret;
+                const isOpen = fret === 0;
+                const colorClass =
+                  isCurrent && inScale
+                    ? "bg-green-600 text-white font-semibold"
+                    : isCurrent
+                    ? "bg-orange-500 text-white"
+                    : inScale
+                    ? "bg-green-500 text-white font-semibold"
+                    : isOpen
+                    ? "bg-neutral-300 text-black font-semibold"
+                    : "bg-amber-600 text-gray-700";
                 return (
                   <div
                     key={`${stringIdx}-${fret}`}
-                    className={`flex items-center justify-center text-xs cursor-pointer select-none ${
-                      isCurrent && inScale
-                        ? "bg-green-600 text-white font-semibold"
-                        : isCurrent
-                        ? "bg-orange-500 text-white"
-                        : inScale
-                        ? "bg-green-500 text-white font-semibold"
-                        : fret === 0
-                        ? "bg-amber-700 text-gray-700"
-                        : "bg-amber-600 text-gray-700"
-                    }`}
+                    className={`flex items-center justify-center text-xs cursor-pointer select-none ${colorClass} ${isOpen ? "border-r-4 border-neutral-800" : ""}`}
                     onClick={() => {
                       playSound(note, stringIdx, fret);
                       setCurrent({ string: stringIdx, fret });
