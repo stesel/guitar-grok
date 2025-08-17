@@ -235,7 +235,7 @@ export default function Fretboard() {
           {/* Strings and frets */}
           {tuning.map((s, stringIdx) => (
             <React.Fragment key={s.label}>
-              <div className="flex items-center justify-center bg-neutral-700 text-white text-sm font-semibold">
+              <div className="flex items-center justify-center bg-neutral-600 text-white text-sm font-semibold">
                 {s.label}
               </div>
               {Array.from({ length: 25 }).map((_, fret) => {
@@ -253,13 +253,11 @@ export default function Fretboard() {
                     ? "bg-green-500 text-white font-semibold"
                     : "bg-amber-600 text-gray-700";
                 // Add white border to first fret (second column)
-                const borderClass = isOpen
-                  ? "border-r-4 border-neutral-200"
-                  : "";
+                const borderClass = isOpen ? "border-r-4 border-white" : "";
                 return (
                   <div
                     key={`${stringIdx}-${fret}`}
-                    className={`flex items-center justify-center text-xs cursor-pointer select-none ${colorClass}  ${borderClass}`}
+                    className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
                     onClick={() => {
                       playSound(note, stringIdx, fret);
                       setCurrent({ string: stringIdx, fret });
