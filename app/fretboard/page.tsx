@@ -25,7 +25,7 @@ export default function FretboardPage() {
       <h1 className="mb-6 text-center text-3xl font-bold md:text-5xl">
         Fretboard
       </h1>
-      <div className="w-screen px-4">
+      <div className="w-screen px-4 pb-4">
         <Fretboard />
       </div>
     </main>

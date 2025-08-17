@@ -17,7 +17,6 @@ const chromaticScale = [
   "B",
 ] as const;
 
-
 type ScaleType = "major" | "minor" | "major-pentatonic" | "minor-pentatonic";
 
 interface StringSpec {
@@ -154,11 +153,7 @@ export default function Fretboard() {
     const notes: NoteInfo[] = [];
     tuning.forEach((s, stringIdx) => {
       for (let fret = 0; fret <= 24; fret++) {
-        const { note, midi } = getNoteAndOctaveAtFret(
-          s.note,
-          s.octave,
-          fret
-        );
+        const { note, midi } = getNoteAndOctaveAtFret(s.note, s.octave, fret);
         if (scaleNotes.includes(note)) {
           const pitch = midiToFrequency(midi);
           notes.push({ string: stringIdx, fret, note, pitch });
@@ -195,112 +190,118 @@ export default function Fretboard() {
 
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="flex justify-center flex-wrap items-center gap-3">
-        <select
-          value={root}
-          onChange={(e) => setRoot(e.target.value)}
-          className="border rounded p-2 text-white cursor-pointer"
-        >
-          {chromaticScale.map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-        <select
-          value={scaleType}
-          onChange={(e) => setScaleType(e.target.value as ScaleType)}
-          className="border rounded p-2 text-white cursor-pointer"
-        >
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-          <option value="major-pentatonic">Major Pentatonic</option>
-          <option value="minor-pentatonic">Minor Pentatonic</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => playSequence(true)}
-          className="bg-green-600 text-white px-3 py-2 rounded cursor-pointer"
-        >
-          Play Ascending
-        </button>
-        <button
-          type="button"
-          onClick={() => playSequence(false)}
-          className="bg-green-600 text-white px-3 py-2 rounded cursor-pointer"
-        >
-          Play Descending
-        </button>
-        <button
-          type="button"
-          onClick={stop}
-          className="bg-gray-600 text-white px-3 py-2 rounded cursor-pointer"
-        >
-          Stop
-        </button>
-      </div>
+      {/* Title for Drop B tuning */}
+      <h2 className="text-center text-2xl font-bold text-white mb-2">
+        Drop B Tuning
+      </h2>
       {/* Centered scrollable fretboard */}
-      <div className="flex justify-center w-full">
-        <div className="overflow-x-auto">
-          <div
-            className="grid gap-px bg-neutral-800 p-1 rounded"
-            style={{
-              gridTemplateColumns: "60px repeat(25, 40px)",
-              gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
-              width: "fit-content",
-            }}
+      <div className="flex flex-col gap-3 justify-center w-full bg-white/10 backdrop-blur-md shadow-lg border border-white/20 rounded-xl p-4">
+        <div className="flex flex-wrap items-center gap-3 justify-center transition-all duration-300">
+          <select
+            value={root}
+            onChange={(e) => setRoot(e.target.value)}
+            className="border-none rounded-lg px-3 py-2 bg-white/20 text-white font-semibold shadow-inner focus:ring-2 focus:ring-green-400 transition"
           >
-            {/* Strings and frets */}
-            {tuning.map((s, stringIdx) => (
-              <React.Fragment key={s.label}>
-                <div className="flex items-center justify-center bg-neutral-600 text-white text-sm font-semibold">
-                  {s.label}
-                </div>
-                {Array.from({ length: 25 }).map((_, fret) => {
-                  const note = getNoteAtFret(s.note, fret);
-                  const inScale = scaleNotes.includes(note);
-                  const isCurrent =
-                    current?.string === stringIdx && current?.fret === fret;
-                  const isOpen = fret === 0;
-                  const colorClass =
-                    isCurrent && inScale
-                      ? "bg-green-600 text-white font-semibold"
-                      : isCurrent
-                      ? "bg-orange-500 text-white"
-                      : inScale
-                      ? "bg-green-500 text-white font-semibold"
-                      : "bg-amber-600 text-gray-700";
-                  // Add white border to first fret (second column)
-                  const borderClass = isOpen ? "border-r-4 border-white" : "";
-                  return (
-                    <div
-                      key={`${stringIdx}-${fret}`}
-                      className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
-                      onClick={() => {
-                        playSound(note, stringIdx, fret);
-                        setCurrent({ string: stringIdx, fret });
-                      }}
-                    >
-                      {note}
-                    </div>
-                  );
-                })}
-              </React.Fragment>
+            {chromaticScale.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
             ))}
-            {/* Fret numbers row at the bottom */}
-            <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-t-4">
-              Fret #
-            </div>
-            {Array.from({ length: 25 }).map((_, fret) => (
-              <div
-                key={`fret-num-${fret}`}
-                className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-t-4 ${
-                  fret === 0 ? "border-r-4" : ""
-                }`}
-              >
-                {fret}
+          </select>
+          <select
+            value={scaleType}
+            onChange={(e) => setScaleType(e.target.value as ScaleType)}
+            className="border-none rounded-lg px-3 py-2 bg-white/20 text-white font-semibold shadow-inner focus:ring-2 focus:ring-green-400 transition"
+          >
+            <option value="major">Major</option>
+            <option value="minor">Minor</option>
+            <option value="major-pentatonic">Major Pentatonic</option>
+            <option value="minor-pentatonic">Minor Pentatonic</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => playSequence(true)}
+            className="bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded-lg shadow-md font-bold hover:scale-105 hover:from-green-400 hover:to-green-600 transition-all duration-150"
+          >
+            Play Ascending
+          </button>
+          <button
+            type="button"
+            onClick={() => playSequence(false)}
+            className="bg-gradient-to-r from-green-500 to-green-700 text-white px-4 py-2 rounded-lg shadow-md font-bold hover:scale-105 hover:from-green-400 hover:to-green-600 transition-all duration-150"
+          >
+            Play Descending
+          </button>
+          <button
+            type="button"
+            onClick={stop}
+            className="bg-gradient-to-r from-gray-600 to-gray-800 text-white px-4 py-2 rounded-lg shadow-md font-bold hover:scale-105 hover:from-gray-500 hover:to-gray-700 transition-all duration-150"
+          >
+            Stop
+          </button>
+        </div>
+        <div className="flex justify-center">
+          <div className="overflow-x-auto">
+            <div
+              className="grid gap-px bg-neutral-800 p-1 rounded"
+              style={{
+                gridTemplateColumns: "60px repeat(25, 40px)",
+                gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
+                width: "fit-content",
+              }}
+            >
+              {/* Strings and frets */}
+              {tuning.map((s, stringIdx) => (
+                <React.Fragment key={s.label}>
+                  <div className="flex items-center justify-center bg-neutral-600 text-white text-sm font-semibold">
+                    {s.label}
+                  </div>
+                  {Array.from({ length: 25 }).map((_, fret) => {
+                    const note = getNoteAtFret(s.note, fret);
+                    const inScale = scaleNotes.includes(note);
+                    const isCurrent =
+                      current?.string === stringIdx && current?.fret === fret;
+                    const isOpen = fret === 0;
+                    const colorClass =
+                      isCurrent && inScale
+                        ? "bg-green-600 text-white font-semibold"
+                        : isCurrent
+                        ? "bg-orange-500 text-white"
+                        : inScale
+                        ? "bg-green-500 text-white font-semibold"
+                        : "bg-amber-600 text-gray-700";
+                    // Add white border to first fret (second column)
+                    const borderClass = isOpen ? "border-r-4 border-white" : "";
+                    return (
+                      <div
+                        key={`${stringIdx}-${fret}`}
+                        className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
+                        onClick={() => {
+                          playSound(note, stringIdx, fret);
+                          setCurrent({ string: stringIdx, fret });
+                        }}
+                      >
+                        {note}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+              {/* Fret numbers row at the bottom */}
+              <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-t-4">
+                Fret #
               </div>
-            ))}
+              {Array.from({ length: 25 }).map((_, fret) => (
+                <div
+                  key={`fret-num-${fret}`}
+                  className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-t-4 ${
+                    fret === 0 ? "border-r-4" : ""
+                  }`}
+                >
+                  {fret}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
