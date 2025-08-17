@@ -17,20 +17,6 @@ const chromaticScale = [
   "B",
 ] as const;
 
-const noteFrequencies: Record<string, number> = {
-  C: 261.63,
-  "C#": 277.18,
-  D: 293.66,
-  "D#": 311.13,
-  E: 329.63,
-  F: 349.23,
-  "F#": 369.99,
-  G: 392.0,
-  "G#": 415.3,
-  A: 440.0,
-  "A#": 466.16,
-  B: 493.88,
-};
 
 type ScaleType = "major" | "minor" | "major-pentatonic" | "minor-pentatonic";
 
@@ -81,10 +67,6 @@ function getNoteAndOctaveAtFret(
   const note = chromaticScale[noteIdx];
   const octave = Math.floor(midi / 12) - 1;
   return { note, octave, midi };
-}
-
-function getFrequency(note: string, octave: number): number {
-  return noteFrequencies[note] * Math.pow(2, octave - 4);
 }
 
 function buildScale(root: string, type: ScaleType): string[] {
@@ -172,7 +154,7 @@ export default function Fretboard() {
     const notes: NoteInfo[] = [];
     tuning.forEach((s, stringIdx) => {
       for (let fret = 0; fret <= 24; fret++) {
-        const { note, octave, midi } = getNoteAndOctaveAtFret(
+        const { note, midi } = getNoteAndOctaveAtFret(
           s.note,
           s.octave,
           fret
