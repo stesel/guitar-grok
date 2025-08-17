@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Guitar Daily",
   description: "Daily guitar practice",
+  icons: { icon: "/favicon.ico" },
 };
 
 export const viewport: Viewport = {
