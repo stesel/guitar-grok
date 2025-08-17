@@ -32,7 +32,7 @@ const noteFrequencies: Record<string, number> = {
   B: 493.88,
 };
 
-type ScaleType = "major" | "minor";
+type ScaleType = "major" | "minor" | "major-pentatonic" | "minor-pentatonic";
 
 interface StringSpec {
   note: string;
@@ -61,13 +61,34 @@ function getFrequency(note: string, octave: number): number {
 }
 
 function buildScale(root: string, type: ScaleType): string[] {
-  const pattern =
-    type === "major" ? [2, 2, 1, 2, 2, 2, 1] : [2, 1, 2, 2, 1, 2, 2];
+  let pattern: number[];
+  switch (type) {
+    case "major":
+      pattern = [2, 2, 1, 2, 2, 2, 1];
+      break;
+    case "minor":
+      pattern = [2, 1, 2, 2, 1, 2, 2];
+      break;
+    case "major-pentatonic":
+      // Major pentatonic: 1, 2, 3, 5, 6 (intervals: 2, 2, 3, 2, 3)
+      pattern = [2, 2, 3, 2, 3];
+      break;
+    case "minor-pentatonic":
+      // Minor pentatonic: 1, b3, 4, 5, b7 (intervals: 3, 2, 2, 3, 2)
+      pattern = [3, 2, 2, 3, 2];
+      break;
+    default:
+      pattern = [2, 2, 1, 2, 2, 2, 1];
+  }
   const scale: string[] = [root];
   let idx = chromaticScale.indexOf(root as (typeof chromaticScale)[number]);
   for (const step of pattern) {
     idx = (idx + step) % chromaticScale.length;
     scale.push(chromaticScale[idx]);
+  }
+  // For pentatonics, only 5 notes
+  if (type === "major-pentatonic" || type === "minor-pentatonic") {
+    return scale.slice(0, 5);
   }
   return scale.slice(0, 7);
 }
@@ -177,6 +198,8 @@ export default function Fretboard() {
         >
           <option value="major">Major</option>
           <option value="minor">Minor</option>
+          <option value="major-pentatonic">Major Pentatonic</option>
+          <option value="minor-pentatonic">Minor Pentatonic</option>
         </select>
         <button
           type="button"
@@ -202,16 +225,17 @@ export default function Fretboard() {
       </div>
       <div className="overflow-x-auto">
         <div
-          className="grid gap-px bg-[#2c1810] p-3 rounded"
+          className="grid gap-px bg-neutral-800 p-1 rounded"
           style={{
             gridTemplateColumns: "60px repeat(25, 40px)",
-            gridTemplateRows: "repeat(6, 40px)",
+            gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
             width: "fit-content",
           }}
         >
+          {/* Strings and frets */}
           {tuning.map((s, stringIdx) => (
             <React.Fragment key={s.label}>
-              <div className="flex items-center justify-center bg-neutral-800 text-white text-sm font-semibold">
+              <div className="flex items-center justify-center bg-neutral-700 text-white text-sm font-semibold">
                 {s.label}
               </div>
               {Array.from({ length: 25 }).map((_, fret) => {
@@ -229,7 +253,9 @@ export default function Fretboard() {
                     ? "bg-green-500 text-white font-semibold"
                     : "bg-amber-600 text-gray-700";
                 // Add white border to first fret (second column)
-                const borderClass = isOpen ? "border-r-4 border-white" : "";
+                const borderClass = isOpen
+                  ? "border-r-4 border-neutral-200"
+                  : "";
                 return (
                   <div
                     key={`${stringIdx}-${fret}`}
@@ -244,6 +270,20 @@ export default function Fretboard() {
                 );
               })}
             </React.Fragment>
+          ))}
+          {/* Fret numbers row at the bottom */}
+          <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-t-4">
+            Fret #
+          </div>
+          {Array.from({ length: 25 }).map((_, fret) => (
+            <div
+              key={`fret-num-${fret}`}
+              className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-t-4 ${
+                fret === 0 ? "border-r-4" : ""
+              }`}
+            >
+              {fret}
+            </div>
           ))}
         </div>
       </div>
