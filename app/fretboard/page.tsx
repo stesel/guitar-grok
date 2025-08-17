@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import Loading from "@/src/components/Loading";
 
 export const metadata: Metadata = {
   title: "Fretboard - Guitar Grok",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 const Fretboard = dynamic(() => import("@/src/components/Fretboard"), {
   ssr: false,
-  loading: () => <div className="p-4">Loading...</div>,
+  loading: () => <Loading />,
 });
 
 export default function FretboardPage() {
