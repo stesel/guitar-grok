@@ -56,6 +56,33 @@ interface NoteInfo {
   pitch: number;
 }
 
+// Helper: get MIDI number for a note and octave
+function getMidiNumber(note: string, octave: number): number {
+  const noteIdx = chromaticScale.indexOf(
+    note as (typeof chromaticScale)[number]
+  );
+  return 12 * (octave + 1) + noteIdx;
+}
+
+// Helper: get frequency from MIDI number
+function midiToFrequency(midi: number): number {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+// Get note and octave at a given string/fret
+function getNoteAndOctaveAtFret(
+  openNote: string,
+  openOctave: number,
+  fret: number
+): { note: string; octave: number; midi: number } {
+  const openMidi = getMidiNumber(openNote, openOctave);
+  const midi = openMidi + fret;
+  const noteIdx = midi % 12;
+  const note = chromaticScale[noteIdx];
+  const octave = Math.floor(midi / 12) - 1;
+  return { note, octave, midi };
+}
+
 function getFrequency(note: string, octave: number): number {
   return noteFrequencies[note] * Math.pow(2, octave - 4);
 }
@@ -122,8 +149,12 @@ export default function Fretboard() {
     initAudio();
     const ctx = audioRef.current;
     if (!ctx) return;
-    const octave = tuning[stringIdx]?.octave + Math.floor(fret / 12);
-    const freq = getFrequency(note, octave);
+    const { midi } = getNoteAndOctaveAtFret(
+      tuning[stringIdx].note,
+      tuning[stringIdx].octave,
+      fret
+    );
+    const freq = midiToFrequency(midi);
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sawtooth";
@@ -141,10 +172,13 @@ export default function Fretboard() {
     const notes: NoteInfo[] = [];
     tuning.forEach((s, stringIdx) => {
       for (let fret = 0; fret <= 24; fret++) {
-        const note = getNoteAtFret(s.note, fret);
+        const { note, octave, midi } = getNoteAndOctaveAtFret(
+          s.note,
+          s.octave,
+          fret
+        );
         if (scaleNotes.includes(note)) {
-          const octave = s.octave + Math.floor(fret / 12);
-          const pitch = getFrequency(note, octave);
+          const pitch = midiToFrequency(midi);
           notes.push({ string: stringIdx, fret, note, pitch });
         }
       }
