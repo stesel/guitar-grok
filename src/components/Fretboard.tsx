@@ -178,8 +178,8 @@ export default function Fretboard() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="w-full flex flex-col gap-2">
+      <div className="flex justify-center flex-wrap items-center gap-3">
         <select
           value={root}
           onChange={(e) => setRoot(e.target.value)}
@@ -223,66 +223,69 @@ export default function Fretboard() {
           Stop
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <div
-          className="grid gap-px bg-neutral-800 p-1 rounded"
-          style={{
-            gridTemplateColumns: "60px repeat(25, 40px)",
-            gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
-            width: "fit-content",
-          }}
-        >
-          {/* Strings and frets */}
-          {tuning.map((s, stringIdx) => (
-            <React.Fragment key={s.label}>
-              <div className="flex items-center justify-center bg-neutral-600 text-white text-sm font-semibold">
-                {s.label}
-              </div>
-              {Array.from({ length: 25 }).map((_, fret) => {
-                const note = getNoteAtFret(s.note, fret);
-                const inScale = scaleNotes.includes(note);
-                const isCurrent =
-                  current?.string === stringIdx && current?.fret === fret;
-                const isOpen = fret === 0;
-                const colorClass =
-                  isCurrent && inScale
-                    ? "bg-green-600 text-white font-semibold"
-                    : isCurrent
-                    ? "bg-orange-500 text-white"
-                    : inScale
-                    ? "bg-green-500 text-white font-semibold"
-                    : "bg-amber-600 text-gray-700";
-                // Add white border to first fret (second column)
-                const borderClass = isOpen ? "border-r-4 border-white" : "";
-                return (
-                  <div
-                    key={`${stringIdx}-${fret}`}
-                    className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
-                    onClick={() => {
-                      playSound(note, stringIdx, fret);
-                      setCurrent({ string: stringIdx, fret });
-                    }}
-                  >
-                    {note}
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-          {/* Fret numbers row at the bottom */}
-          <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-t-4">
-            Fret #
-          </div>
-          {Array.from({ length: 25 }).map((_, fret) => (
-            <div
-              key={`fret-num-${fret}`}
-              className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-t-4 ${
-                fret === 0 ? "border-r-4" : ""
-              }`}
-            >
-              {fret}
+      {/* Centered scrollable fretboard */}
+      <div className="flex justify-center w-full">
+        <div className="overflow-x-auto">
+          <div
+            className="grid gap-px bg-neutral-800 p-1 rounded"
+            style={{
+              gridTemplateColumns: "60px repeat(25, 40px)",
+              gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
+              width: "fit-content",
+            }}
+          >
+            {/* Strings and frets */}
+            {tuning.map((s, stringIdx) => (
+              <React.Fragment key={s.label}>
+                <div className="flex items-center justify-center bg-neutral-600 text-white text-sm font-semibold">
+                  {s.label}
+                </div>
+                {Array.from({ length: 25 }).map((_, fret) => {
+                  const note = getNoteAtFret(s.note, fret);
+                  const inScale = scaleNotes.includes(note);
+                  const isCurrent =
+                    current?.string === stringIdx && current?.fret === fret;
+                  const isOpen = fret === 0;
+                  const colorClass =
+                    isCurrent && inScale
+                      ? "bg-green-600 text-white font-semibold"
+                      : isCurrent
+                      ? "bg-orange-500 text-white"
+                      : inScale
+                      ? "bg-green-500 text-white font-semibold"
+                      : "bg-amber-600 text-gray-700";
+                  // Add white border to first fret (second column)
+                  const borderClass = isOpen ? "border-r-4 border-white" : "";
+                  return (
+                    <div
+                      key={`${stringIdx}-${fret}`}
+                      className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
+                      onClick={() => {
+                        playSound(note, stringIdx, fret);
+                        setCurrent({ string: stringIdx, fret });
+                      }}
+                    >
+                      {note}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+            {/* Fret numbers row at the bottom */}
+            <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-t-4">
+              Fret #
             </div>
-          ))}
+            {Array.from({ length: 25 }).map((_, fret) => (
+              <div
+                key={`fret-num-${fret}`}
+                className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-t-4 ${
+                  fret === 0 ? "border-r-4" : ""
+                }`}
+              >
+                {fret}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
