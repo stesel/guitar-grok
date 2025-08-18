@@ -34,6 +34,23 @@ const tuning: StringSpec[] = [
   { note: "B", octave: 1, label: "6: B1" },
 ];
 
+const FRET_WIDTH = 40;
+const FRET_GAP = 1;
+const LABEL_WIDTH = 60;
+const BOARD_PADDING = 4; // matches tailwind p-1
+const BOARD_HEIGHT = FRET_WIDTH * 6 + FRET_GAP * 5;
+const singleInlays = [3, 5, 7, 9, 15, 17, 19, 21];
+const doubleInlays = [12, 24];
+
+function fretCenter(fret: number): number {
+  return (
+    BOARD_PADDING +
+    LABEL_WIDTH +
+    fret * (FRET_WIDTH + FRET_GAP) +
+    FRET_WIDTH / 2
+  );
+}
+
 interface NoteInfo {
   string: number;
   fret: number;
@@ -243,10 +260,10 @@ export default function Fretboard() {
         <div className="flex justify-center">
           <div className="overflow-x-auto">
             <div
-              className="grid gap-px bg-neutral-800 p-1 rounded"
+              className="relative grid gap-px bg-gradient-to-r from-amber-900 to-amber-700 p-1 rounded-lg shadow-xl"
               style={{
-                gridTemplateColumns: "60px repeat(25, 40px)",
-                gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
+                gridTemplateColumns: `60px repeat(25, ${FRET_WIDTH}px)`,
+                gridTemplateRows: `repeat(6, ${FRET_WIDTH}px) ${FRET_WIDTH}px`,
                 width: "fit-content",
               }}
             >
@@ -269,13 +286,12 @@ export default function Fretboard() {
                         ? "bg-orange-500 text-white"
                         : inScale
                         ? "bg-green-500 text-white font-semibold"
-                        : "bg-amber-600 text-gray-700";
-                    // Add white border to first fret (second column)
+                        : "bg-amber-800/80 text-amber-200";
                     const borderClass = isOpen ? "border-r-4 border-white" : "";
                     return (
                       <div
                         key={`${stringIdx}-${fret}`}
-                        className={`flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
+                        className={`relative flex items-center justify-center text-xs cursor-pointer select-none transition-colors duration-100 rounded-sm shadow-inner ${colorClass} ${borderClass} hover:ring-amber-100 hover:ring`}
                         onClick={() => {
                           playSound(note, stringIdx, fret);
                           setCurrent({ string: stringIdx, fret });
@@ -300,6 +316,38 @@ export default function Fretboard() {
                 >
                   {fret}
                 </div>
+              ))}
+
+              {singleInlays.map((fret) => (
+                <div
+                  key={`inlay-${fret}`}
+                  className="pointer-events-none absolute w-3 h-3 rounded-full bg-white/30"
+                  style={{
+                    left: `${fretCenter(fret)}px`,
+                    top: `${BOARD_PADDING + BOARD_HEIGHT / 2}px`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                />
+              ))}
+              {doubleInlays.map((fret) => (
+                <React.Fragment key={`inlay-double-${fret}`}>
+                  <div
+                    className="pointer-events-none absolute w-3 h-3 rounded-full bg-white/30"
+                    style={{
+                      left: `${fretCenter(fret)}px`,
+                      top: `${BOARD_PADDING + BOARD_HEIGHT * 0.35}px`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute w-3 h-3 rounded-full bg-white/30"
+                    style={{
+                      left: `${fretCenter(fret)}px`,
+                      top: `${BOARD_PADDING + BOARD_HEIGHT * 0.65}px`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                  />
+                </React.Fragment>
               ))}
             </div>
           </div>
