@@ -19,7 +19,9 @@ import {
   insertSession,
   insertAttempt,
 } from "@/src/lib/db";
-import Metronome from "./Metronome";
+import dynamic from "next/dynamic";
+
+const Metronome = dynamic(() => import("./Metronome"), { ssr: false });
 
 export default function GuitarDailyMvp() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
