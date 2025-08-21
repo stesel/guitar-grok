@@ -31,7 +31,7 @@ export default function GuitarDailyMvp() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [bpm, setBpm] = useState(90);
-  const [countIn] = useState(1);
+  const [countIn, setCountIn] = useState(1);
 
   const streak = useMemo(() => computeStreak(attempts), [attempts]);
 
@@ -63,6 +63,8 @@ export default function GuitarDailyMvp() {
     if (!item) return null;
     return exercises.find((e) => e.id === item.exerciseId) || null;
   }, [currentSession, activeIndex, exercises]);
+
+  const activeItem = currentSession?.items[activeIndex];
 
   async function startSession() {
     const sess = generateSession(exercises, length);
@@ -194,6 +196,22 @@ export default function GuitarDailyMvp() {
                   onChange={(e) => setBpm(parseInt(e.target.value))}
                   className="w-20 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-white"
                 />
+              </div>
+              <div className="flex items-center gap-3 text-sm mt-2">
+                <label className="text-white/80">Count-in</label>
+                <select
+                  value={countIn}
+                  onChange={(e) => setCountIn(parseInt(e.target.value))}
+                  className="rounded border border-white/20 bg-white/10 px-2 py-1 text-white"
+                >
+                  <option value={0}>None</option>
+                  <option value={1}>1 bar</option>
+                  <option value={2}>2 bars</option>
+                  <option value={4}>4 bars</option>
+                </select>
+              </div>
+              <div className="mt-1 text-xs text-white/70">
+                {activeExercise.key} · {activeExercise.bpmMin}-{activeExercise.bpmMax} BPM · {activeItem?.plannedMinutes} min
               </div>
               <Metronome
                 bpm={bpm}
