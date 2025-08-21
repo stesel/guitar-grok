@@ -29,7 +29,7 @@ export default function GuitarDailyMvp() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [bpm, setBpm] = useState(90);
-  const [countIn, setCountIn] = useState(1);
+  const [countIn] = useState(1);
 
   const streak = useMemo(() => computeStreak(attempts), [attempts]);
 
