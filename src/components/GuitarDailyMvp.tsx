@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Attempt,
   AttemptStatus,
@@ -124,22 +125,22 @@ export default function GuitarDailyMvp() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-700 via-indigo-700 to-slate-900 p-4 text-white">
         <form
           onSubmit={signIn}
-          className="space-y-3 p-6 rounded-xl border bg-white"
+          className="space-y-3 p-6 rounded-xl border border-white/20 bg-white/10 backdrop-blur"
         >
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="border rounded px-3 py-2 w-64"
+            className="w-64 rounded border border-white/20 bg-white/10 px-3 py-2 text-white placeholder:text-white/60"
             placeholder="you@example.com"
           />
           <button
             type="submit"
-            className="w-full rounded bg-indigo-600 px-4 py-2 text-white"
+            className="w-full rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-500"
           >
             Send Magic Link
           </button>
@@ -149,20 +150,20 @@ export default function GuitarDailyMvp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-800">
-      <header className="sticky top-0 z-10 backdrop-blur bg-white/60 border-b border-slate-200">
+    <div className="min-h-screen bg-gradient-to-br from-purple-700 via-indigo-700 to-slate-900 text-white">
+      <header className="sticky top-0 z-10 border-b border-white/20 bg-white/10 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold">
               G
             </span>
             <div>
               <div className="text-lg font-semibold">Guitar Daily</div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-white/70">
                 Create · Schedule · Practice
               </div>
             </div>
-          </div>
+          </Link>
           <div className="flex items-center gap-3 text-sm">
             <div className="hidden md:block">
               Streak: <span className="font-semibold">{streak.current}</span>{" "}
@@ -171,7 +172,7 @@ export default function GuitarDailyMvp() {
             <div className="hidden md:block">Sessions: {sessions.length}</div>
             <button
               onClick={signOut}
-              className="px-3 py-1 rounded-lg border hover:bg-slate-50"
+              className="px-3 py-1 rounded-lg border border-white/20 hover:bg-white/20"
             >
               Sign out
             </button>
@@ -181,15 +182,15 @@ export default function GuitarDailyMvp() {
 
       <main className="mx-auto max-w-6xl px-4 py-6 grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-white/70 backdrop-blur rounded-2xl shadow-sm border border-slate-200">
+          <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20">
             <div className="p-4">
               <div className="flex flex-col md:flex-row md:items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-slate-600">Length</label>
+                  <label className="text-sm text-white/80">Length</label>
                   <select
                     value={length}
                     onChange={(e) => setLength(parseInt(e.target.value))}
-                    className="border rounded-lg px-2 py-1"
+                    className="rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-white"
                   >
                     <option value={15}>15 min</option>
                     <option value={30}>30 min</option>
@@ -204,7 +205,7 @@ export default function GuitarDailyMvp() {
                   Start Session
                 </button>
                 {currentSession && (
-                  <div className="text-sm text-slate-600">
+                  <div className="text-sm text-white/80">
                     {currentSession.items.length} items · planned{" "}
                     {currentSession.totalPlanned} min
                   </div>
@@ -221,16 +222,16 @@ export default function GuitarDailyMvp() {
                       <button
                         key={idx}
                         onClick={() => setActiveIndex(idx)}
-                        className={`text-left p-3 rounded-xl border hover:bg-slate-50 ${
+                        className={`text-left p-3 rounded-xl border hover:bg-white/20 ${
                           active
                             ? "border-indigo-400 ring-2 ring-indigo-200"
-                            : "border-slate-200"
+                            : "border-white/20"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="font-medium">{ex.title}</div>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-xs text-white/70 mt-1">
                           {ex.key} · {ex.bpmMin}-{ex.bpmMax} BPM ·{" "}
                           {it.plannedMinutes} min
                         </div>
@@ -242,7 +243,7 @@ export default function GuitarDailyMvp() {
             </div>
           </div>
 
-          <div className="bg-white/70 backdrop-blur rounded-2xl shadow-sm border border-slate-200">
+          <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20">
             <div className="p-4">
               {activeExercise ? (
                 <div className="space-y-4">
@@ -251,7 +252,7 @@ export default function GuitarDailyMvp() {
                       <div className="text-lg font-semibold">
                         {activeExercise.title}
                       </div>
-                      <div className="text-sm text-slate-500">
+                      <div className="text-sm text-white/70">
                         Key {activeExercise.key} · {activeExercise.bpmMin}-
                         {activeExercise.bpmMax} BPM
                       </div>
@@ -259,14 +260,14 @@ export default function GuitarDailyMvp() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={prevExercise}
-                        className="px-3 py-2 rounded-lg border hover:bg-slate-50"
+                        className="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/20"
                       >
                         Prev
                       </button>
                       <Metronome bpm={bpm} countIn={countIn} />
                       <button
                         onClick={nextExercise}
-                        className="px-3 py-2 rounded-lg border hover:bg-slate-50"
+                        className="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/20"
                       >
                         Next
                       </button>
@@ -274,8 +275,8 @@ export default function GuitarDailyMvp() {
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2 p-4 rounded-xl border bg-white">
-                      <div className="text-sm text-slate-600">
+                    <div className="md:col-span-2 p-4 rounded-xl border border-white/20 bg-white/10">
+                      <div className="text-sm text-white/80">
                         Tempo: <span className="font-semibold">{bpm} BPM</span>
                       </div>
                       <input
@@ -287,11 +288,11 @@ export default function GuitarDailyMvp() {
                         className="w-full"
                       />
                       <div className="flex items-center gap-3 text-sm mt-2">
-                        <label className="text-slate-600">Count-in</label>
+                        <label className="text-white/80">Count-in</label>
                         <select
                           value={countIn}
                           onChange={(e) => setCountIn(parseInt(e.target.value))}
-                          className="border rounded px-2 py-1"
+                          className="rounded border border-white/20 bg-white/10 px-2 py-1 text-white"
                         >
                           <option value={0}>None</option>
                           <option value={1}>1 bar</option>
@@ -324,13 +325,13 @@ export default function GuitarDailyMvp() {
                   </div>
 
                   {activeExercise.notes && (
-                    <div className="text-sm text-slate-600 bg-white p-3 rounded-xl border">
+                    <div className="text-sm text-white/80 bg-white/10 p-3 rounded-xl border border-white/20">
                       {activeExercise.notes}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-slate-600">
+                <div className="text-white/80">
                   Start a session to begin practicing.
                 </div>
               )}
