@@ -196,12 +196,10 @@ export default function GuitarDailyMvp() {
               <Metronome
                 bpm={bpm}
                 countIn={countIn}
-                onStart={() => logAttempt("started")}
-                onStop={() => logAttempt("stopped")}
               />
               <div className="flex gap-3">
                 <button
-                  onClick={() => void logAttempt("success")}
+                  onClick={() => void logAttempt("done")}
                   className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-medium hover:bg-green-700"
                 >
                   Success
