@@ -246,10 +246,24 @@ export default function Fretboard() {
               className="grid gap-px bg-neutral-800 p-1 rounded"
               style={{
                 gridTemplateColumns: "60px repeat(25, 40px)",
-                gridTemplateRows: "repeat(6, 40px) 40px", // Fret numbers row at the bottom
+                gridTemplateRows: "40px repeat(6, 40px) 40px", // Add top fret numbers row
                 width: "fit-content",
               }}
             >
+              {/* Top fret numbers row */}
+              <div className="flex items-center justify-center bg-neutral-700 text-white text-xs font-bold border-neutral-200 border-b-4">
+                Fret #
+              </div>
+              {Array.from({ length: 25 }).map((_, fret) => (
+                <div
+                  key={`fret-num-top-${fret}`}
+                  className={`flex items-center justify-center bg-neutral-600 text-white text-xs font-bold border-neutral-200 border-b-4 ${
+                    fret === 0 ? "border-r-4" : ""
+                  }`}
+                >
+                  {fret}
+                </div>
+              ))}
               {/* Strings and frets */}
               {tuning.map((s, stringIdx) => (
                 <React.Fragment key={s.label}>
