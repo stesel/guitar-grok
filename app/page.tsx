@@ -9,6 +9,11 @@ interface HomeLink {
 const links: HomeLink[] = [
   { href: "/mvp", title: "Guitar Daily", description: "Plan and track practice" },
   { href: "/fretboard", title: "Fretboard", description: "Explore notes across the neck" },
+  {
+    href: "/metal-modes/root-b",
+    title: "Metal Modes (B)",
+    description: "Formulas and usage for modes with root B",
+  },
 ];
 
 export default function Home() {
