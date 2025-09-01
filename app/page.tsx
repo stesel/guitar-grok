@@ -14,6 +14,11 @@ const links: HomeLink[] = [
     title: "Metal Modes (B)",
     description: "Formulas and usage for modes with root B",
   },
+  {
+    href: "/metal-chords/root-b",
+    title: "Metal Chords (B)",
+    description: "Chord formulas and symbols for root B",
+  },
 ];
 
 export default function Home() {
