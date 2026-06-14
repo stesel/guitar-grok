@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getLesson, getLessons } from "@/src/lib/lessons";
 
 export const metadata: Metadata = {
@@ -13,42 +15,30 @@ interface LessonsPageProps {
   };
 }
 
-function renderMarkdown(content: string) {
-  const blocks = content.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
-
-  return blocks.map((block, index) => {
-    if (block.startsWith("# ")) {
-      return (
-        <h2 key={index} className="text-3xl font-bold">
-          {block.replace(/^#\s+/, "")}
-        </h2>
-      );
-    }
-
-    if (block.startsWith("## ")) {
-      return (
-        <h3 key={index} className="text-2xl font-semibold">
-          {block.replace(/^##\s+/, "")}
-        </h3>
-      );
-    }
-
-    if (block.startsWith("- ")) {
-      return (
-        <ul key={index} className="list-disc space-y-2 pl-6 text-white/85">
-          {block.split("\n").map((item) => (
-            <li key={item}>{item.replace(/^-\s+/, "")}</li>
-          ))}
-        </ul>
-      );
-    }
-
-    return (
-      <p key={index} className="leading-7 text-white/85">
-        {block}
-      </p>
-    );
-  });
+function LessonMarkdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => <h2 className="text-3xl font-bold">{children}</h2>,
+        h2: ({ children }) => <h3 className="text-2xl font-semibold">{children}</h3>,
+        h3: ({ children }) => <h4 className="text-xl font-semibold">{children}</h4>,
+        p: ({ children }) => <p className="leading-7 text-white/85">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc space-y-2 pl-6 text-white/85">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal space-y-2 pl-6 text-white/85">{children}</ol>,
+        strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+        hr: () => <hr className="border-white/15" />,
+        pre: ({ children }) => (
+          <pre className="overflow-x-auto rounded-xl bg-black/40 p-4 text-sm leading-6 text-white/90">
+            {children}
+          </pre>
+        ),
+        code: ({ children }) => <code className="font-mono">{children}</code>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
 }
 
 export default async function LessonsPage({ searchParams }: LessonsPageProps) {
@@ -91,7 +81,9 @@ export default async function LessonsPage({ searchParams }: LessonsPageProps) {
 
         <article className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur md:p-8">
           {selectedLesson ? (
-            <div className="space-y-5">{renderMarkdown(selectedLesson.content)}</div>
+            <div className="space-y-5">
+              <LessonMarkdown content={selectedLesson.content} />
+            </div>
           ) : (
             <p className="text-white/80">Add Markdown files to content/lessons to create lessons.</p>
           )}
