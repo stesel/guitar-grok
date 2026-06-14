@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LessonsNav } from "@/src/components/LessonsNav";
 import { getLesson, getLessons } from "@/src/lib/lessons";
 
 export const metadata: Metadata = {
@@ -54,40 +54,11 @@ export default async function LessonsPage({ searchParams }: LessonsPageProps) {
       </div>
 
       <div className="grid min-w-0 gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
-        <nav
-          aria-label="Lessons"
-          className="min-w-0 rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur"
-        >
-          <details className="group min-w-0 md:block">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-white/90 transition focus:outline-none focus:ring-2 focus:ring-white/70 md:hidden [&::-webkit-details-marker]:hidden">
-              <span className="min-w-0">
-                <span className="block text-xs uppercase tracking-[0.2em] text-white/55">Choose a lesson</span>
-                <span className="mt-1 block truncate">{selectedLesson?.title ?? "Lessons"}</span>
-              </span>
-              <span aria-hidden="true" className="shrink-0 text-white/70 transition group-open:rotate-180">⌄</span>
-            </summary>
-
-            <div className="hidden px-3 pb-3 text-sm font-semibold text-white/70 md:block">Choose a lesson</div>
-            <div className="mt-3 hidden max-h-[60vh] min-w-0 flex-col gap-2 overflow-y-auto group-open:flex md:mt-0 md:flex md:max-h-none md:overflow-visible md:pb-0">
-              {lessons.map((lesson) => {
-                const isSelected = lesson.slug === selectedLesson?.slug;
-
-                return (
-                  <Link
-                    key={lesson.slug}
-                    href={`/lessons?lesson=${lesson.slug}`}
-                    aria-current={isSelected ? "page" : undefined}
-                    className={`w-full truncate whitespace-nowrap rounded-xl px-4 py-3 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-white/70 ${
-                      isSelected ? "bg-white text-indigo-900" : "bg-white/10 text-white hover:bg-white/20"
-                    }`}
-                  >
-                    {lesson.title}
-                  </Link>
-                );
-              })}
-            </div>
-          </details>
-        </nav>
+        <LessonsNav
+          lessons={lessons}
+          selectedLessonSlug={selectedLesson?.slug}
+          selectedLessonTitle={selectedLesson?.title}
+        />
 
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
           {selectedLesson ? (
