@@ -46,7 +46,7 @@ export default async function HorrorMetalPage({ searchParams }: HorrorMetalPageP
   const lessons = allLessons.filter((lesson) => lesson.slug.startsWith("horror-metal-"));
   const selectedSlug = searchParams?.lesson ?? lessons[0]?.slug;
   const selectedLesson = selectedSlug ? await getLesson(selectedSlug) : null;
-  const isCourseLesson = selectedLesson?.slug.startsWith("horror-metal-");
+  const courseLesson = selectedLesson?.slug.startsWith("horror-metal-") ? selectedLesson : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 overflow-x-hidden px-4 py-8">
@@ -61,15 +61,15 @@ export default async function HorrorMetalPage({ searchParams }: HorrorMetalPageP
       <div className="grid min-w-0 gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
         <LessonsNav
           lessons={lessons}
-          selectedLessonSlug={isCourseLesson ? selectedLesson.slug : lessons[0]?.slug}
-          selectedLessonTitle={isCourseLesson ? selectedLesson.title : lessons[0]?.title}
+          selectedLessonSlug={courseLesson?.slug ?? lessons[0]?.slug}
+          selectedLessonTitle={courseLesson?.title ?? lessons[0]?.title}
           basePath="/horror-metal"
         />
 
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
-          {selectedLesson && isCourseLesson ? (
+          {courseLesson ? (
             <div className="min-w-0 space-y-5">
-              <LessonMarkdown content={selectedLesson.content} />
+              <LessonMarkdown content={courseLesson.content} />
             </div>
           ) : (
             <p className="text-white/80">Choose a lesson from the course navigation.</p>
