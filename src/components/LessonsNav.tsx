@@ -210,13 +210,12 @@ export function LessonsNav({
                     aria-hidden="true"
                     className={classNames(
                       "flex h-6 w-6 items-center justify-center rounded-full border text-sm font-bold",
-                      isCompleted
-                        ? classNames(
-                            "border-white/60 bg-white/25 text-white",
-                            isSelected && "shadow-[0_0_0_1px_rgba(49,46,129,0.3)]",
-                          )
-                        : isSelected
-                          ? "border-indigo-900/35 text-transparent"
+                      isSelected
+                        ? isCompleted
+                          ? "border-indigo-900 bg-indigo-900 text-white"
+                          : "border-indigo-900/60 text-transparent"
+                        : isCompleted
+                          ? "border-white/60 bg-white/25 text-white"
                           : "border-white/35 text-transparent",
                     )}
                   >
