@@ -9,9 +9,15 @@ interface LessonsNavProps {
   lessons: LessonSummary[];
   selectedLessonTitle?: string;
   selectedLessonSlug?: string;
+  basePath?: string;
 }
 
-export function LessonsNav({ lessons, selectedLessonTitle, selectedLessonSlug }: LessonsNavProps) {
+export function LessonsNav({
+  lessons,
+  selectedLessonTitle,
+  selectedLessonSlug,
+  basePath = "/lessons",
+}: LessonsNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const focusRing =
@@ -69,7 +75,7 @@ export function LessonsNav({ lessons, selectedLessonTitle, selectedLessonSlug }:
             <Link
               key={lesson.slug}
               data-slug={lesson.slug}
-              href={`/lessons?lesson=${lesson.slug}`}
+              href={`${basePath}?lesson=${lesson.slug}`}
               aria-current={isSelected ? "page" : undefined}
               onClick={() => setIsOpen(false)}
               className={classNames(
