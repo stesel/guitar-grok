@@ -64,6 +64,7 @@ export default async function HorrorMetalPage({ searchParams }: HorrorMetalPageP
           selectedLessonSlug={courseLesson?.slug ?? lessons[0]?.slug}
           selectedLessonTitle={courseLesson?.title ?? lessons[0]?.title}
           basePath="/horror-metal"
+          progressStorageKey="guitar-grok:horror-metal:completed-lessons"
         />
 
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
