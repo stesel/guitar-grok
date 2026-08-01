@@ -13,6 +13,45 @@ interface LessonsNavProps {
   progressStorageKey?: string;
 }
 
+interface TruncatedLessonTitleProps {
+  title: string;
+  isCompleted: boolean;
+}
+
+function TruncatedLessonTitle({ title, isCompleted }: TruncatedLessonTitleProps) {
+  const titleRef = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useLayoutEffect(() => {
+    const element = titleRef.current;
+    if (!element) return;
+
+    const updateTruncation = () => {
+      setIsTruncated(element.scrollWidth > element.clientWidth);
+    };
+
+    updateTruncation();
+
+    const resizeObserver = new ResizeObserver(updateTruncation);
+    resizeObserver.observe(element);
+
+    return () => resizeObserver.disconnect();
+  }, [title]);
+
+  return (
+    <span
+      ref={titleRef}
+      title={isTruncated ? title : undefined}
+      className={classNames(
+        "block truncate whitespace-nowrap",
+        isCompleted && "line-through opacity-70",
+      )}
+    >
+      {title}
+    </span>
+  );
+}
+
 export function LessonsNav({
   lessons,
   selectedLessonTitle,
@@ -149,9 +188,7 @@ export function LessonsNav({
                   !isSelected && "transition-colors duration-150 hover:bg-white/10",
                 )}
               >
-                <span className={classNames("block truncate whitespace-nowrap", isCompleted && "line-through opacity-70")}>
-                  {lesson.title}
-                </span>
+                <TruncatedLessonTitle title={lesson.title} isCompleted={isCompleted} />
               </Link>
 
               {progressStorageKey ? (
@@ -174,9 +211,10 @@ export function LessonsNav({
                     className={classNames(
                       "flex h-6 w-6 items-center justify-center rounded-full border text-sm font-bold",
                       isCompleted
-                        ? isSelected
-                          ? "border-indigo-700 bg-indigo-700 text-white"
-                          : "border-emerald-300 bg-emerald-400 text-emerald-950"
+                        ? classNames(
+                            "border-white/60 bg-white/25 text-white",
+                            isSelected && "shadow-[0_0_0_1px_rgba(49,46,129,0.3)]",
+                          )
                         : isSelected
                           ? "border-indigo-900/35 text-transparent"
                           : "border-white/35 text-transparent",
