@@ -96,6 +96,11 @@ export function LessonsNav({
         <span className="min-w-0">
           <span className="block text-xs uppercase tracking-[0.2em] text-white/55">Choose a lesson</span>
           <span className="mt-1 block truncate">{selectedLessonTitle ?? "Lessons"}</span>
+          {progressStorageKey ? (
+            <span className="mt-1 block text-xs font-normal text-white/50" aria-live="polite">
+              {completedLessons.size} of {lessons.length} completed
+            </span>
+          ) : null}
         </span>
         <span
           aria-hidden="true"
@@ -153,7 +158,7 @@ export function LessonsNav({
                 <button
                   type="button"
                   aria-pressed={isCompleted}
-                  aria-label={`${isCompleted ? "Mark" : "Mark"} ${lesson.title} ${isCompleted ? "not done" : "done"}`}
+                  aria-label={`${isCompleted ? "Mark as not done" : "Mark as done"}: ${lesson.title}`}
                   title={isCompleted ? "Mark as not done" : "Mark as done"}
                   onClick={() => toggleLessonCompletion(lesson.slug)}
                   className={classNames(
