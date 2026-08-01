@@ -2,7 +2,7 @@
 
 import classNames from "classnames";
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { LessonSummary } from "@/src/lib/lessons";
 
 interface LessonsNavProps {
@@ -10,6 +10,7 @@ interface LessonsNavProps {
   selectedLessonTitle?: string;
   selectedLessonSlug?: string;
   basePath?: string;
+  progressStorageKey?: string;
 }
 
 export function LessonsNav({
@@ -17,11 +18,34 @@ export function LessonsNav({
   selectedLessonTitle,
   selectedLessonSlug,
   basePath = "/lessons",
+  progressStorageKey,
 }: LessonsNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const focusRing =
     "focus:shadow-[inset_0_0_0_2px_#fbbf24] focus-visible:shadow-[inset_0_0_0_2px_#fbbf24]";
+
+  useEffect(() => {
+    if (!progressStorageKey) return;
+
+    try {
+      const storedValue = window.localStorage.getItem(progressStorageKey);
+      if (!storedValue) return;
+
+      const parsedValue: unknown = JSON.parse(storedValue);
+      if (!Array.isArray(parsedValue)) return;
+
+      const validLessonSlugs = new Set(lessons.map((lesson) => lesson.slug));
+      const completedSlugs = parsedValue.filter(
+        (value): value is string => typeof value === "string" && validLessonSlugs.has(value),
+      );
+
+      setCompletedLessons(new Set(completedSlugs));
+    } catch {
+      setCompletedLessons(new Set());
+    }
+  }, [lessons, progressStorageKey]);
 
   useLayoutEffect(() => {
     if (!isOpen || !selectedLessonSlug) return;
@@ -32,6 +56,28 @@ export function LessonsNav({
 
     container.scrollTop = selected.offsetTop - container.offsetTop;
   }, [isOpen, selectedLessonSlug]);
+
+  function toggleLessonCompletion(slug: string) {
+    if (!progressStorageKey) return;
+
+    setCompletedLessons((currentCompletedLessons) => {
+      const nextCompletedLessons = new Set(currentCompletedLessons);
+
+      if (nextCompletedLessons.has(slug)) {
+        nextCompletedLessons.delete(slug);
+      } else {
+        nextCompletedLessons.add(slug);
+      }
+
+      try {
+        window.localStorage.setItem(progressStorageKey, JSON.stringify([...nextCompletedLessons]));
+      } catch {
+        // Keep the in-memory state working if storage is unavailable.
+      }
+
+      return nextCompletedLessons;
+    });
+  }
 
   return (
     <nav
@@ -59,7 +105,14 @@ export function LessonsNav({
         </span>
       </button>
 
-      <div className="hidden px-3 pb-3 text-sm font-semibold text-white/70 md:block">Choose a lesson</div>
+      <div className="hidden px-3 pb-3 text-sm font-semibold text-white/70 md:block">
+        <span>Choose a lesson</span>
+        {progressStorageKey ? (
+          <span className="mt-1 block text-xs font-normal text-white/50" aria-live="polite">
+            {completedLessons.size} of {lessons.length} completed
+          </span>
+        ) : null}
+      </div>
 
       <div
         ref={listRef}
@@ -70,24 +123,65 @@ export function LessonsNav({
       >
         {lessons.map((lesson) => {
           const isSelected = lesson.slug === selectedLessonSlug;
+          const isCompleted = completedLessons.has(lesson.slug);
 
           return (
-            <Link
+            <div
               key={lesson.slug}
               data-slug={lesson.slug}
-              href={`${basePath}?lesson=${lesson.slug}`}
-              aria-current={isSelected ? "page" : undefined}
-              onClick={() => setIsOpen(false)}
               className={classNames(
-                "w-full rounded-xl px-4 py-3 text-left text-sm font-medium outline-none",
-                focusRing,
-                isSelected
-                  ? "bg-white text-indigo-900"
-                  : "bg-white/10 text-white transition-colors duration-150 hover:bg-white/20",
+                "flex min-w-0 items-stretch overflow-hidden rounded-xl",
+                isSelected ? "bg-white text-indigo-900" : "bg-white/10 text-white",
               )}
             >
-              <span className="block truncate whitespace-nowrap">{lesson.title}</span>
-            </Link>
+              <Link
+                href={`${basePath}?lesson=${lesson.slug}`}
+                aria-current={isSelected ? "page" : undefined}
+                onClick={() => setIsOpen(false)}
+                className={classNames(
+                  "min-w-0 flex-1 px-4 py-3 text-left text-sm font-medium outline-none",
+                  focusRing,
+                  !isSelected && "transition-colors duration-150 hover:bg-white/10",
+                )}
+              >
+                <span className={classNames("block truncate whitespace-nowrap", isCompleted && "line-through opacity-70")}>
+                  {lesson.title}
+                </span>
+              </Link>
+
+              {progressStorageKey ? (
+                <button
+                  type="button"
+                  aria-pressed={isCompleted}
+                  aria-label={`${isCompleted ? "Mark" : "Mark"} ${lesson.title} ${isCompleted ? "not done" : "done"}`}
+                  title={isCompleted ? "Mark as not done" : "Mark as done"}
+                  onClick={() => toggleLessonCompletion(lesson.slug)}
+                  className={classNames(
+                    "flex w-12 shrink-0 cursor-pointer items-center justify-center border-l outline-none transition-colors",
+                    focusRing,
+                    isSelected
+                      ? "border-indigo-900/15 hover:bg-indigo-100"
+                      : "border-white/10 hover:bg-white/10",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={classNames(
+                      "flex h-6 w-6 items-center justify-center rounded-full border text-sm font-bold",
+                      isCompleted
+                        ? isSelected
+                          ? "border-indigo-700 bg-indigo-700 text-white"
+                          : "border-emerald-300 bg-emerald-400 text-emerald-950"
+                        : isSelected
+                          ? "border-indigo-900/35 text-transparent"
+                          : "border-white/35 text-transparent",
+                    )}
+                  >
+                    ✓
+                  </span>
+                </button>
+              ) : null}
+            </div>
           );
         })}
       </div>
