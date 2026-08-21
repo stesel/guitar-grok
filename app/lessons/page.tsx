@@ -42,8 +42,12 @@ function LessonMarkdown({ content }: { content: string }) {
 }
 
 export default async function LessonsPage({ searchParams }: LessonsPageProps) {
-  const lessons = await getLessons();
-  const selectedSlug = searchParams?.lesson ?? lessons[0]?.slug;
+  const allLessons = await getLessons();
+  const lessons = allLessons.filter((lesson) => !lesson.slug.startsWith("horror-metal-"));
+  const requestedSlug = searchParams?.lesson;
+  const selectedSlug = lessons.some((lesson) => lesson.slug === requestedSlug)
+    ? requestedSlug
+    : lessons[0]?.slug;
   const selectedLesson = selectedSlug ? await getLesson(selectedSlug) : null;
 
   return (
