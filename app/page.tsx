@@ -8,6 +8,7 @@ interface HomeLink {
 
 const links: HomeLink[] = [
   { href: "/fretboard", title: "Fretboard", description: "Explore notes across the neck" },
+  { href: "/metronome", title: "Metronome", description: "Practice with an adjustable tempo and count-in" },
   { href: "/lessons", title: "Lessons", description: "Read lesson notes from Markdown files" },
   {
     href: "/horror-metal",

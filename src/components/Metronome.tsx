@@ -12,9 +12,11 @@ interface MetronomeProps {
 
 export default function Metronome({ bpm, countIn, onStart, onStop }: MetronomeProps) {
   const [isRunning, setIsRunning] = useState(false);
+  const [currentBeat, setCurrentBeat] = useState(0);
+  const [isCountingIn, setIsCountingIn] = useState(false);
   const synthRef = useRef<Tone.Synth | null>(null);
   const lowRef = useRef<Tone.Synth | null>(null);
-  const startedRef = useRef(false);
+  const eventIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     const high = new Tone.Synth({ oscillator: { type: "square" } }).toDestination();
@@ -24,7 +26,9 @@ export default function Metronome({ bpm, countIn, onStart, onStop }: MetronomePr
     return () => {
       high.dispose();
       low.dispose();
-      Tone.Transport.cancel(0);
+      if (eventIdRef.current !== null) {
+        Tone.Transport.clear(eventIdRef.current);
+      }
       Tone.Transport.stop();
     };
   }, []);
@@ -33,52 +37,96 @@ export default function Metronome({ bpm, countIn, onStart, onStop }: MetronomePr
     Tone.Transport.bpm.value = bpm;
   }, [bpm]);
 
-  const scheduleClick = async () => {
+  const start = async () => {
+    if (isRunning || !synthRef.current || !lowRef.current) return;
+
     await Tone.start();
-    const synth = synthRef.current!;
-    const low = lowRef.current!;
-    Tone.Transport.cancel(0);
+    const synth = synthRef.current;
+    const low = lowRef.current;
+
+    if (eventIdRef.current !== null) {
+      Tone.Transport.clear(eventIdRef.current);
+    }
 
     let barIndex = 0;
     let beatInBar = 0;
+    let practiceStarted = countIn === 0;
 
-    Tone.Transport.scheduleRepeat((time) => {
+    setIsRunning(true);
+    setIsCountingIn(countIn > 0);
+    setCurrentBeat(1);
+
+    if (practiceStarted) onStart?.();
+
+    eventIdRef.current = Tone.Transport.scheduleRepeat((time) => {
       const isDownbeat = beatInBar === 0;
       const note = isDownbeat ? "C6" : "G5";
       const s = isDownbeat ? synth : low;
       s.triggerAttackRelease(note, "16n", time);
 
+      const displayedBeat = beatInBar + 1;
+      Tone.getDraw().schedule(() => setCurrentBeat(displayedBeat), time);
+
       beatInBar = (beatInBar + 1) % 4;
       if (beatInBar === 0) barIndex += 1;
-      if (!startedRef.current && countIn > 0 && barIndex >= countIn) {
-        startedRef.current = true;
-        onStart?.();
+      if (!practiceStarted && barIndex >= countIn) {
+        practiceStarted = true;
+        Tone.getDraw().schedule(() => {
+          setIsCountingIn(false);
+          onStart?.();
+        }, time);
       }
     }, "4n");
 
-    Tone.Transport.start();
-  };
-
-  const start = async () => {
-    if (isRunning) return;
-    await scheduleClick();
-    setIsRunning(true);
-    onStart?.();
+    Tone.Transport.start("+0.05");
   };
 
   const stop = () => {
     Tone.Transport.stop();
+    if (eventIdRef.current !== null) {
+      Tone.Transport.clear(eventIdRef.current);
+      eventIdRef.current = null;
+    }
     setIsRunning(false);
-    startedRef.current = false;
+    setIsCountingIn(false);
+    setCurrentBeat(0);
     onStop?.();
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="space-y-5">
+      <div className="flex justify-center gap-3" aria-label={isRunning ? `Beat ${currentBeat} of 4` : "Metronome stopped"}>
+        {[1, 2, 3, 4].map((beat) => (
+          <span
+            key={beat}
+            className={`h-4 w-4 rounded-full transition-colors ${
+              currentBeat === beat ? "bg-amber-300" : "bg-white/20"
+            }`}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+
+      <p className="text-center text-sm text-white/75" aria-live="polite">
+        {!isRunning ? "Ready" : isCountingIn ? `Count-in: ${countIn} bar${countIn === 1 ? "" : "s"}` : "Playing"}
+      </p>
+
       {isRunning ? (
-        <button onClick={stop} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700">Stop</button>
+        <button
+          type="button"
+          onClick={stop}
+          className="w-full rounded-xl bg-rose-600 px-6 py-3 font-medium text-white hover:bg-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          Stop metronome
+        </button>
       ) : (
-        <button onClick={start} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700">Start</button>
+        <button
+          type="button"
+          onClick={start}
+          className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-medium text-white hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          Start metronome
+        </button>
       )}
     </div>
   );
