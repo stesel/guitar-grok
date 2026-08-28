@@ -165,18 +165,18 @@ export default function HeaderMetronome() {
           isOpen ? "block" : "hidden"
         }`}
       >
-          <div className="mb-5 flex items-center justify-between">
-            <div className="min-w-0">
+          <div className="mb-5 min-w-0">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">Metronome</h2>
-              {activeExercise && (
-                <p className="truncate text-sm text-amber-200" title={activeExercise.exerciseTitle}>
-                  {activeExercise.exerciseTitle}
-                </p>
-              )}
+              <span className="shrink-0 whitespace-nowrap text-sm text-white/60" aria-live="polite">
+                {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
+              </span>
             </div>
-            <span className="text-sm text-white/60" aria-live="polite">
-              {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
-            </span>
+            {activeExercise && (
+              <p className="mt-1 truncate text-sm text-amber-200" title={activeExercise.exerciseTitle}>
+                {activeExercise.exerciseTitle}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 items-end gap-4">
