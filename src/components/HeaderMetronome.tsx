@@ -194,7 +194,7 @@ export default function HeaderMetronome() {
 
             <div>
               <label htmlFor="metronome-increment" className="mb-2 block text-sm font-medium text-white/75">
-                Tempo increment after stop
+                Increment
               </label>
               <div className="relative">
                 <input
