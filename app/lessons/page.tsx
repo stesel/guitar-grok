@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import LessonMarkdown from "@/src/components/LessonMarkdown";
 import { LessonsNav } from "@/src/components/LessonsNav";
 import { getLesson, getLessons } from "@/src/lib/lessons";
 
@@ -13,32 +12,6 @@ interface LessonsPageProps {
   searchParams?: {
     lesson?: string;
   };
-}
-
-function LessonMarkdown({ content }: { content: string }) {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        h1: ({ children }) => <h2 className="break-words text-2xl font-bold leading-tight sm:text-3xl">{children}</h2>,
-        h2: ({ children }) => <h3 className="break-words text-xl font-semibold leading-tight sm:text-2xl">{children}</h3>,
-        h3: ({ children }) => <h4 className="break-words text-lg font-semibold leading-tight sm:text-xl">{children}</h4>,
-        p: ({ children }) => <p className="break-words leading-7 text-white/85">{children}</p>,
-        ul: ({ children }) => <ul className="list-disc space-y-2 pl-6 text-white/85">{children}</ul>,
-        ol: ({ children }) => <ol className="list-decimal space-y-2 pl-6 text-white/85">{children}</ol>,
-        strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-        hr: () => <hr className="border-white/15" />,
-        pre: ({ children }) => (
-          <pre className="max-w-full overflow-x-auto rounded-xl bg-black/40 p-4 text-sm leading-6 text-white/90">
-            {children}
-          </pre>
-        ),
-        code: ({ children }) => <code className="font-mono">{children}</code>,
-      }}
-    >
-      {content}
-    </ReactMarkdown>
-  );
 }
 
 export default async function LessonsPage({ searchParams }: LessonsPageProps) {
@@ -67,7 +40,11 @@ export default async function LessonsPage({ searchParams }: LessonsPageProps) {
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
           {selectedLesson ? (
             <div className="min-w-0 space-y-5">
-              <LessonMarkdown content={selectedLesson.content} />
+              <LessonMarkdown
+                content={selectedLesson.content}
+                lessonSlug={selectedLesson.slug}
+                lessonTitle={selectedLesson.title}
+              />
             </div>
           ) : (
             <p className="text-white/80">Add Markdown files to content/lessons to create lessons.</p>
