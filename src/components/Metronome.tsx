@@ -23,8 +23,7 @@ export default function Metronome({
   onStop,
 }: MetronomeProps) {
   const [isRunning, setIsRunning] = useState(false);
-  const synthRef = useRef<Tone.Synth | null>(null);
-  const lowRef = useRef<Tone.Synth | null>(null);
+  const clickRef = useRef<Tone.NoiseSynth | null>(null);
   const loopRef = useRef<Tone.Loop | null>(null);
   const numeratorRef = useRef(numerator);
   const beatRef = useRef(0);
@@ -34,22 +33,21 @@ export default function Metronome({
   const onStartRef = useRef(onStart);
 
   useEffect(() => {
-    const high = new Tone.Synth({
-      oscillator: { type: "square" },
-      envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 },
-      volume: -12,
+    const clickFilter = new Tone.Filter({
+      type: "bandpass",
+      frequency: 1900,
+      Q: 1.4,
     }).toDestination();
-    const low = new Tone.Synth({
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.001, decay: 0.03, sustain: 0, release: 0.01 },
-      volume: -15,
-    }).toDestination();
-    synthRef.current = high;
-    lowRef.current = low;
+    const click = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.022, sustain: 0, release: 0.005 },
+      volume: -8,
+    }).connect(clickFilter);
+    clickRef.current = click;
     return () => {
       loopRef.current?.dispose();
-      high.dispose();
-      low.dispose();
+      click.dispose();
+      clickFilter.dispose();
       Tone.Transport.stop();
     };
   }, []);
@@ -78,11 +76,10 @@ export default function Metronome({
   }, [denominator]);
 
   const start = async () => {
-    if (isRunning || !synthRef.current || !lowRef.current) return;
+    if (isRunning || !clickRef.current) return;
 
     await Tone.start();
-    const synth = synthRef.current;
-    const low = lowRef.current;
+    const click = clickRef.current;
     const ticksPerBeat = Math.max(1, Math.round((Tone.Transport.PPQ * 4) / denominator));
 
     loopRef.current?.dispose();
@@ -94,10 +91,7 @@ export default function Metronome({
 
     loopRef.current = new Tone.Loop((time) => {
       const displayedBeat = beatRef.current + 1;
-      const isDownbeat = displayedBeat === 1;
-      const note = isDownbeat ? "C6" : "G5";
-      const s = isDownbeat ? synth : low;
-      s.triggerAttackRelease(note, "16n", time);
+      click.triggerAttackRelease("32n", time);
 
       Tone.getDraw().schedule(() => onBeatRef.current?.(displayedBeat), time);
       beatRef.current = (beatRef.current + 1) % numeratorRef.current;

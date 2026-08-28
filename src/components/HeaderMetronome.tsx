@@ -113,17 +113,16 @@ export default function HeaderMetronome() {
         <span className={isRunning ? "text-slate-700" : "text-white/60"}>{numerator}/{denominator}</span>
       </button>
 
-      {isOpen ? (
-        <section
-          id="global-metronome-panel"
-          aria-label="Metronome settings"
-          className="absolute right-0 top-[calc(100%+0.75rem)] w-[min(23rem,calc(100vw-2rem))] rounded-2xl border border-white/20 bg-slate-950/95 p-5 shadow-2xl backdrop-blur-xl"
-        >
+      <section
+        id="global-metronome-panel"
+        aria-label="Metronome settings"
+        aria-hidden={!isOpen}
+        className={`fixed left-1/2 top-[4.75rem] w-[min(23rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/20 bg-slate-950/95 p-5 shadow-2xl backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.75rem)] sm:translate-x-0 ${
+          isOpen ? "block" : "hidden"
+        }`}
+      >
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Metronome</h2>
-              <p className="text-xs text-white/60">Available on every page</p>
-            </div>
+            <h2 className="text-lg font-semibold">Metronome</h2>
             <span className="text-sm text-white/60" aria-live="polite">
               {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
             </span>
@@ -209,9 +208,7 @@ export default function HeaderMetronome() {
               setCurrentBeat(0);
             }}
           />
-          <p className="mt-3 text-center text-xs text-white/50">No fixed tempo or time-signature presets.</p>
-        </section>
-      ) : null}
+      </section>
     </div>
   );
 }
