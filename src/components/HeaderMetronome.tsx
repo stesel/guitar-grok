@@ -13,11 +13,17 @@ interface StoredSettings {
   bpm: number;
   numerator: number;
   denominator: number;
+  increment: number;
 }
 
 function positiveInteger(value: string, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 1 ? Math.round(parsed) : fallback;
+}
+
+function nonNegativeInteger(value: string, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : fallback;
 }
 
 export default function HeaderMetronome() {
@@ -28,9 +34,11 @@ export default function HeaderMetronome() {
   const [bpm, setBpm] = useState(DEFAULT_BPM);
   const [numerator, setNumerator] = useState(DEFAULT_NUMERATOR);
   const [denominator, setDenominator] = useState(DEFAULT_DENOMINATOR);
+  const [increment, setIncrement] = useState(0);
   const [bpmInput, setBpmInput] = useState(String(DEFAULT_BPM));
   const [numeratorInput, setNumeratorInput] = useState(String(DEFAULT_NUMERATOR));
   const [denominatorInput, setDenominatorInput] = useState(String(DEFAULT_DENOMINATOR));
+  const [incrementInput, setIncrementInput] = useState("0");
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,12 +49,15 @@ export default function HeaderMetronome() {
         const storedBpm = positiveInteger(String(settings.bpm), DEFAULT_BPM);
         const storedNumerator = positiveInteger(String(settings.numerator), DEFAULT_NUMERATOR);
         const storedDenominator = positiveInteger(String(settings.denominator), DEFAULT_DENOMINATOR);
+        const storedIncrement = nonNegativeInteger(String(settings.increment), 0);
         setBpm(storedBpm);
         setNumerator(storedNumerator);
         setDenominator(storedDenominator);
+        setIncrement(storedIncrement);
         setBpmInput(String(storedBpm));
         setNumeratorInput(String(storedNumerator));
         setDenominatorInput(String(storedDenominator));
+        setIncrementInput(String(storedIncrement));
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
@@ -56,8 +67,8 @@ export default function HeaderMetronome() {
 
   useEffect(() => {
     if (!settingsLoaded) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator }));
-  }, [bpm, numerator, denominator, settingsLoaded]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator, increment }));
+  }, [bpm, numerator, denominator, increment, settingsLoaded]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -83,6 +94,12 @@ export default function HeaderMetronome() {
     setBpmInput(String(next));
   };
 
+  const adjustBpm = (amount: number) => {
+    const next = Math.max(1, positiveInteger(bpmInput, bpm) + amount);
+    setBpm(next);
+    setBpmInput(String(next));
+  };
+
   const commitNumerator = () => {
     const next = positiveInteger(numeratorInput, numerator);
     setNumerator(next);
@@ -93,6 +110,27 @@ export default function HeaderMetronome() {
     const next = positiveInteger(denominatorInput, denominator);
     setDenominator(next);
     setDenominatorInput(String(next));
+  };
+
+  const commitIncrement = () => {
+    const next = nonNegativeInteger(incrementInput, increment);
+    setIncrement(next);
+    setIncrementInput(String(next));
+  };
+
+  const stopMetronome = () => {
+    setIsRunning(false);
+    setCurrentBeat(0);
+    const appliedIncrement = nonNegativeInteger(incrementInput, increment);
+    setIncrement(appliedIncrement);
+    setIncrementInput(String(appliedIncrement));
+    if (appliedIncrement === 0) return;
+
+    setBpm((current) => {
+      const next = current + appliedIncrement;
+      setBpmInput(String(next));
+      return next;
+    });
   };
 
   const visibleBeats = Math.min(numerator, MAX_VISIBLE_BEATS);
@@ -161,8 +199,16 @@ export default function HeaderMetronome() {
             </fieldset>
 
             <div>
-              <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo</label>
-              <div className="relative">
+              <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo (BPM)</label>
+              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => adjustBpm(-1)}
+                  className="rounded-lg border border-white/20 bg-white/10 text-xl font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                  aria-label="Decrease tempo by 1 BPM"
+                >
+                  −
+                </button>
                 <input
                   id="metronome-tempo"
                   type="number"
@@ -172,10 +218,37 @@ export default function HeaderMetronome() {
                   onChange={(event) => setBpmInput(event.target.value)}
                   onBlur={commitBpm}
                   onKeyDown={(event) => event.key === "Enter" && commitBpm()}
-                  className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-3 pr-12 text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                  className="min-w-0 rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-center text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">BPM</span>
+                <button
+                  type="button"
+                  onClick={() => adjustBpm(1)}
+                  className="rounded-lg border border-white/20 bg-white/10 text-xl font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                  aria-label="Increase tempo by 1 BPM"
+                >
+                  +
+                </button>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="metronome-increment" className="mb-2 block text-sm font-medium text-white/75">
+              Tempo increment after stop
+            </label>
+            <div className="relative">
+              <input
+                id="metronome-increment"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={incrementInput}
+                onChange={(event) => setIncrementInput(event.target.value)}
+                onBlur={commitIncrement}
+                onKeyDown={(event) => event.key === "Enter" && commitIncrement()}
+                className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-3 pr-12 text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">BPM</span>
             </div>
           </div>
 
@@ -203,10 +276,7 @@ export default function HeaderMetronome() {
             denominator={denominator}
             onBeat={setCurrentBeat}
             onStart={() => setIsRunning(true)}
-            onStop={() => {
-              setIsRunning(false);
-              setCurrentBeat(0);
-            }}
+            onStop={stopMetronome}
           />
       </section>
     </div>
