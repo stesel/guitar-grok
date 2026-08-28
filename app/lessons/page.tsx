@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ExerciseTablature from "@/src/components/ExerciseTablature";
 import { LessonsNav } from "@/src/components/LessonsNav";
 import { getLesson, getLessons } from "@/src/lib/lessons";
+import { getTablatureBlocks } from "@/src/lib/lesson-tablature";
 
 export const metadata: Metadata = {
   title: "Lessons - Guitar Grok",
@@ -15,7 +17,9 @@ interface LessonsPageProps {
   };
 }
 
-function LessonMarkdown({ content }: { content: string }) {
+function LessonMarkdown({ content, lessonSlug }: { content: string; lessonSlug: string }) {
+  const tablatureBlocks = getTablatureBlocks(content, lessonSlug);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -28,11 +32,20 @@ function LessonMarkdown({ content }: { content: string }) {
         ol: ({ children }) => <ol className="list-decimal space-y-2 pl-6 text-white/85">{children}</ol>,
         strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
         hr: () => <hr className="border-white/15" />,
-        pre: ({ children }) => (
-          <pre className="max-w-full overflow-x-auto rounded-xl bg-black/40 p-4 text-sm leading-6 text-white/90">
-            {children}
-          </pre>
-        ),
+        pre: ({ children, node }) => {
+          const startLine = node?.position?.start.line;
+          const tablature = tablatureBlocks.find((block) => block.startLine === startLine);
+
+          return tablature ? (
+            <ExerciseTablature exerciseId={tablature.id} exerciseTitle={tablature.title}>
+              {children}
+            </ExerciseTablature>
+          ) : (
+            <pre className="max-w-full overflow-x-auto rounded-xl bg-black/40 p-4 text-sm leading-6 text-white/90">
+              {children}
+            </pre>
+          );
+        },
         code: ({ children }) => <code className="font-mono">{children}</code>,
       }}
     >
@@ -67,7 +80,7 @@ export default async function LessonsPage({ searchParams }: LessonsPageProps) {
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
           {selectedLesson ? (
             <div className="min-w-0 space-y-5">
-              <LessonMarkdown content={selectedLesson.content} />
+              <LessonMarkdown content={selectedLesson.content} lessonSlug={selectedLesson.slug} />
             </div>
           ) : (
             <p className="text-white/80">Add Markdown files to content/lessons to create lessons.</p>
