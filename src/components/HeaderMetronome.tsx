@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Metronome from "./Metronome";
+import { START_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
 
 const STORAGE_KEY = "guitar-grok-metronome";
 const DEFAULT_BPM = 120;
@@ -39,7 +40,18 @@ export default function HeaderMetronome() {
   const [numeratorInput, setNumeratorInput] = useState(String(DEFAULT_NUMERATOR));
   const [denominatorInput, setDenominatorInput] = useState(String(DEFAULT_DENOMINATOR));
   const [incrementInput, setIncrementInput] = useState("0");
+  const [activeExercise, setActiveExercise] = useState<StartExerciseDetail | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const selectExercise = (event: Event) => {
+      const { detail } = event as CustomEvent<StartExerciseDetail>;
+      setActiveExercise(detail);
+      setIsOpen(true);
+    };
+    window.addEventListener(START_EXERCISE_EVENT, selectExercise);
+    return () => window.removeEventListener(START_EXERCISE_EVENT, selectExercise);
+  }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -153,11 +165,18 @@ export default function HeaderMetronome() {
           isOpen ? "block" : "hidden"
         }`}
       >
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Metronome</h2>
-            <span className="text-sm text-white/60" aria-live="polite">
-              {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
-            </span>
+          <div className="mb-5 min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Metronome</h2>
+              <span className="shrink-0 whitespace-nowrap text-sm text-white/60" aria-live="polite">
+                {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
+              </span>
+            </div>
+            {activeExercise && (
+              <p className="mt-1 truncate text-sm text-amber-200" title={activeExercise.exerciseTitle}>
+                {activeExercise.exerciseTitle}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 items-end gap-4">
@@ -255,6 +274,7 @@ export default function HeaderMetronome() {
             onBeat={setCurrentBeat}
             onStart={() => setIsRunning(true)}
             onStop={stopMetronome}
+            startEventName={START_EXERCISE_EVENT}
           />
       </section>
     </div>
