@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 
 interface MetronomeProps {
@@ -11,6 +11,7 @@ interface MetronomeProps {
   onBeat?: (beat: number) => void;
   onStart?: () => void;
   onStop?: () => void;
+  startEventName?: string;
 }
 
 export default function Metronome({
@@ -21,6 +22,7 @@ export default function Metronome({
   onBeat,
   onStart,
   onStop,
+  startEventName,
 }: MetronomeProps) {
   const [isRunning, setIsRunning] = useState(false);
   const clickRef = useRef<Tone.NoiseSynth | null>(null);
@@ -75,7 +77,7 @@ export default function Metronome({
     barRef.current = 0;
   }, [denominator]);
 
-  const start = async () => {
+  const start = useCallback(async () => {
     if (isRunning || !clickRef.current) return;
 
     await Tone.start();
@@ -107,7 +109,19 @@ export default function Metronome({
 
     Tone.Transport.position = 0;
     Tone.Transport.start("+0.05");
-  };
+  }, [countIn, denominator, isRunning, onStart]);
+
+  const startRef = useRef(start);
+  useEffect(() => {
+    startRef.current = start;
+  }, [start]);
+
+  useEffect(() => {
+    if (!startEventName) return;
+    const startFromExternalControl = () => void startRef.current();
+    window.addEventListener(startEventName, startFromExternalControl);
+    return () => window.removeEventListener(startEventName, startFromExternalControl);
+  }, [startEventName]);
 
   const stop = () => {
     loopRef.current?.stop();
