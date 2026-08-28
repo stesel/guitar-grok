@@ -7,11 +7,19 @@ interface ExerciseTablatureProps {
   children: ReactNode;
   exerciseId: string;
   exerciseTitle: string;
+  lessonId: string;
+  lessonTitle: string;
 }
 
-export default function ExerciseTablature({ children, exerciseId, exerciseTitle }: ExerciseTablatureProps) {
+export default function ExerciseTablature({
+  children,
+  exerciseId,
+  exerciseTitle,
+  lessonId,
+  lessonTitle,
+}: ExerciseTablatureProps) {
   const startExercise = () => {
-    const detail: StartExerciseDetail = { exerciseId, exerciseTitle };
+    const detail: StartExerciseDetail = { exerciseId, exerciseTitle, lessonId, lessonTitle };
     window.dispatchEvent(new CustomEvent<StartExerciseDetail>(START_EXERCISE_EVENT, { detail }));
   };
 
@@ -21,6 +29,8 @@ export default function ExerciseTablature({ children, exerciseId, exerciseTitle 
       title={exerciseTitle}
       data-exercise-id={exerciseId}
       data-exercise-title={exerciseTitle}
+      data-lesson-id={lessonId}
+      data-lesson-title={lessonTitle}
     >
       <figcaption className="flex min-h-12 items-center justify-between gap-3 border-b border-white/10 px-4 py-2">
         <span className="truncate text-sm font-medium text-white/70">{exerciseTitle}</span>
