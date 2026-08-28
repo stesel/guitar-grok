@@ -126,7 +126,7 @@ export default function Metronome({
         <button
           type="button"
           onClick={stop}
-          className="w-full rounded-xl bg-rose-600 px-6 py-3 font-semibold text-white hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="w-full cursor-pointer rounded-xl bg-rose-600 px-6 py-3 font-semibold text-white hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           ■ Stop
         </button>
@@ -134,7 +134,7 @@ export default function Metronome({
         <button
           type="button"
           onClick={start}
-          className="w-full rounded-xl bg-amber-300 px-6 py-3 font-semibold text-slate-950 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="w-full cursor-pointer rounded-xl bg-amber-300 px-6 py-3 font-semibold text-slate-950 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           ▶ Start
         </button>
