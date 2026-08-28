@@ -6,25 +6,48 @@ import * as Tone from "tone";
 interface MetronomeProps {
   bpm: number;
   countIn: number;
+  numerator: number;
+  denominator: number;
+  onBeat?: (beat: number) => void;
   onStart?: () => void;
   onStop?: () => void;
 }
 
-export default function Metronome({ bpm, countIn, onStart, onStop }: MetronomeProps) {
+export default function Metronome({
+  bpm,
+  countIn,
+  numerator,
+  denominator,
+  onBeat,
+  onStart,
+  onStop,
+}: MetronomeProps) {
   const [isRunning, setIsRunning] = useState(false);
-  const synthRef = useRef<Tone.Synth | null>(null);
-  const lowRef = useRef<Tone.Synth | null>(null);
-  const startedRef = useRef(false);
+  const clickRef = useRef<Tone.NoiseSynth | null>(null);
+  const loopRef = useRef<Tone.Loop | null>(null);
+  const numeratorRef = useRef(numerator);
+  const beatRef = useRef(0);
+  const barRef = useRef(0);
+  const practiceStartedRef = useRef(false);
+  const onBeatRef = useRef(onBeat);
+  const onStartRef = useRef(onStart);
 
   useEffect(() => {
-    const high = new Tone.Synth({ oscillator: { type: "square" } }).toDestination();
-    const low = new Tone.Synth({ oscillator: { type: "triangle" } }).toDestination();
-    synthRef.current = high;
-    lowRef.current = low;
+    const clickFilter = new Tone.Filter({
+      type: "bandpass",
+      frequency: 1900,
+      Q: 1.4,
+    }).toDestination();
+    const click = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.022, sustain: 0, release: 0.005 },
+      volume: -8,
+    }).connect(clickFilter);
+    clickRef.current = click;
     return () => {
-      high.dispose();
-      low.dispose();
-      Tone.Transport.cancel(0);
+      loopRef.current?.dispose();
+      click.dispose();
+      clickFilter.dispose();
       Tone.Transport.stop();
     };
   }, []);
@@ -33,52 +56,88 @@ export default function Metronome({ bpm, countIn, onStart, onStop }: MetronomePr
     Tone.Transport.bpm.value = bpm;
   }, [bpm]);
 
-  const scheduleClick = async () => {
-    await Tone.start();
-    const synth = synthRef.current!;
-    const low = lowRef.current!;
-    Tone.Transport.cancel(0);
+  useEffect(() => {
+    numeratorRef.current = numerator;
+    beatRef.current = 0;
+    barRef.current = 0;
+  }, [numerator]);
 
-    let barIndex = 0;
-    let beatInBar = 0;
+  useEffect(() => {
+    onBeatRef.current = onBeat;
+    onStartRef.current = onStart;
+  }, [onBeat, onStart]);
 
-    Tone.Transport.scheduleRepeat((time) => {
-      const isDownbeat = beatInBar === 0;
-      const note = isDownbeat ? "C6" : "G5";
-      const s = isDownbeat ? synth : low;
-      s.triggerAttackRelease(note, "16n", time);
-
-      beatInBar = (beatInBar + 1) % 4;
-      if (beatInBar === 0) barIndex += 1;
-      if (!startedRef.current && countIn > 0 && barIndex >= countIn) {
-        startedRef.current = true;
-        onStart?.();
-      }
-    }, "4n");
-
-    Tone.Transport.start();
-  };
+  useEffect(() => {
+    if (!loopRef.current) return;
+    const ticksPerBeat = Math.max(1, Math.round((Tone.Transport.PPQ * 4) / denominator));
+    loopRef.current.interval = `${ticksPerBeat}i`;
+    beatRef.current = 0;
+    barRef.current = 0;
+  }, [denominator]);
 
   const start = async () => {
-    if (isRunning) return;
-    await scheduleClick();
+    if (isRunning || !clickRef.current) return;
+
+    await Tone.start();
+    const click = clickRef.current;
+    const ticksPerBeat = Math.max(1, Math.round((Tone.Transport.PPQ * 4) / denominator));
+
+    loopRef.current?.dispose();
+    beatRef.current = 0;
+    barRef.current = 0;
+    practiceStartedRef.current = countIn === 0;
     setIsRunning(true);
-    onStart?.();
+    if (practiceStartedRef.current) onStart?.();
+
+    loopRef.current = new Tone.Loop((time) => {
+      const displayedBeat = beatRef.current + 1;
+      const velocity = displayedBeat === 1 ? 1 : 0.55;
+      click.triggerAttackRelease("32n", time, velocity);
+
+      Tone.getDraw().schedule(() => onBeatRef.current?.(displayedBeat), time);
+      beatRef.current = (beatRef.current + 1) % numeratorRef.current;
+      if (beatRef.current === 0) barRef.current += 1;
+      if (!practiceStartedRef.current && barRef.current >= countIn) {
+        practiceStartedRef.current = true;
+        Tone.getDraw().schedule(() => {
+          onStartRef.current?.();
+        }, time);
+      }
+    }, `${ticksPerBeat}i`).start(0);
+
+    Tone.Transport.position = 0;
+    Tone.Transport.start("+0.05");
   };
 
   const stop = () => {
+    loopRef.current?.stop();
+    loopRef.current?.dispose();
+    loopRef.current = null;
     Tone.Transport.stop();
+    Tone.Transport.position = 0;
     setIsRunning(false);
-    startedRef.current = false;
+    onBeat?.(0);
     onStop?.();
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div>
       {isRunning ? (
-        <button onClick={stop} className="px-4 py-2 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700">Stop</button>
+        <button
+          type="button"
+          onClick={stop}
+          className="w-full rounded-xl bg-rose-600 px-6 py-3 font-semibold text-white hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          ■ Stop
+        </button>
       ) : (
-        <button onClick={start} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700">Start</button>
+        <button
+          type="button"
+          onClick={start}
+          className="w-full rounded-xl bg-amber-300 px-6 py-3 font-semibold text-slate-950 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          ▶ Start
+        </button>
       )}
     </div>
   );
