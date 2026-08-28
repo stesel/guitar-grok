@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
+import { START_EXERCISE_EVENT } from "@/src/lib/metronome-events";
 
 interface MetronomeProps {
   bpm: number;
@@ -75,7 +76,7 @@ export default function Metronome({
     barRef.current = 0;
   }, [denominator]);
 
-  const start = async () => {
+  const start = useCallback(async () => {
     if (isRunning || !clickRef.current) return;
 
     await Tone.start();
@@ -107,7 +108,13 @@ export default function Metronome({
 
     Tone.Transport.position = 0;
     Tone.Transport.start("+0.05");
-  };
+  }, [countIn, denominator, isRunning, onStart]);
+
+  useEffect(() => {
+    const startFromExercise = () => void start();
+    window.addEventListener(START_EXERCISE_EVENT, startFromExercise);
+    return () => window.removeEventListener(START_EXERCISE_EVENT, startFromExercise);
+  }, [start]);
 
   const stop = () => {
     loopRef.current?.stop();
