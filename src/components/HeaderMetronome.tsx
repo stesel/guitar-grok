@@ -94,12 +94,6 @@ export default function HeaderMetronome() {
     setBpmInput(String(next));
   };
 
-  const adjustBpm = (amount: number) => {
-    const next = Math.max(1, positiveInteger(bpmInput, bpm) + amount);
-    setBpm(next);
-    setBpmInput(String(next));
-  };
-
   const commitNumerator = () => {
     const next = positiveInteger(numeratorInput, numerator);
     setNumerator(next);
@@ -199,16 +193,8 @@ export default function HeaderMetronome() {
             </fieldset>
 
             <div>
-              <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo (BPM)</label>
-              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => adjustBpm(-1)}
-                  className="rounded-lg border border-white/20 bg-white/10 text-xl font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-                  aria-label="Decrease tempo by 1 BPM"
-                >
-                  −
-                </button>
+              <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo</label>
+              <div className="relative">
                 <input
                   id="metronome-tempo"
                   type="number"
@@ -218,16 +204,9 @@ export default function HeaderMetronome() {
                   onChange={(event) => setBpmInput(event.target.value)}
                   onBlur={commitBpm}
                   onKeyDown={(event) => event.key === "Enter" && commitBpm()}
-                  className="min-w-0 rounded-lg border border-white/20 bg-white/10 px-2 py-2 text-center text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                  className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-3 pr-12 text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
                 />
-                <button
-                  type="button"
-                  onClick={() => adjustBpm(1)}
-                  className="rounded-lg border border-white/20 bg-white/10 text-xl font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-                  aria-label="Increase tempo by 1 BPM"
-                >
-                  +
-                </button>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">BPM</span>
               </div>
             </div>
           </div>

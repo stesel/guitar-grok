@@ -91,7 +91,8 @@ export default function Metronome({
 
     loopRef.current = new Tone.Loop((time) => {
       const displayedBeat = beatRef.current + 1;
-      click.triggerAttackRelease("32n", time);
+      const velocity = displayedBeat === 1 ? 1 : 0.55;
+      click.triggerAttackRelease("32n", time, velocity);
 
       Tone.getDraw().schedule(() => onBeatRef.current?.(displayedBeat), time);
       beatRef.current = (beatRef.current + 1) % numeratorRef.current;
