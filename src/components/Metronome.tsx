@@ -41,7 +41,7 @@ export default function Metronome({
     const click = new Tone.NoiseSynth({
       noise: { type: "white" },
       envelope: { attack: 0.001, decay: 0.022, sustain: 0, release: 0.005 },
-      volume: -8,
+      volume: 8,
     }).connect(clickFilter);
     clickRef.current = click;
     return () => {
