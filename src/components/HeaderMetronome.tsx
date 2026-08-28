@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Metronome from "./Metronome";
+import { START_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronome-events";
 
 const STORAGE_KEY = "guitar-grok-metronome";
 const DEFAULT_BPM = 120;
@@ -39,7 +40,18 @@ export default function HeaderMetronome() {
   const [numeratorInput, setNumeratorInput] = useState(String(DEFAULT_NUMERATOR));
   const [denominatorInput, setDenominatorInput] = useState(String(DEFAULT_DENOMINATOR));
   const [incrementInput, setIncrementInput] = useState("0");
+  const [activeExercise, setActiveExercise] = useState<StartExerciseDetail | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const showExercise = (event: Event) => {
+      const { detail } = event as CustomEvent<StartExerciseDetail>;
+      setActiveExercise(detail);
+      setIsOpen(true);
+    };
+    window.addEventListener(START_EXERCISE_EVENT, showExercise);
+    return () => window.removeEventListener(START_EXERCISE_EVENT, showExercise);
+  }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -154,7 +166,10 @@ export default function HeaderMetronome() {
         }`}
       >
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Metronome</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold">Metronome</h2>
+              {activeExercise && <p className="truncate text-sm text-amber-200">{activeExercise.exerciseTitle}</p>}
+            </div>
             <span className="text-sm text-white/60" aria-live="polite">
               {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
             </span>
