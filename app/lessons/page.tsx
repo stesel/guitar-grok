@@ -17,7 +17,15 @@ interface LessonsPageProps {
   };
 }
 
-function LessonMarkdown({ content, lessonSlug }: { content: string; lessonSlug: string }) {
+function LessonMarkdown({
+  content,
+  lessonSlug,
+  lessonTitle,
+}: {
+  content: string;
+  lessonSlug: string;
+  lessonTitle: string;
+}) {
   const tablatureBlocks = getTablatureBlocks(content, lessonSlug);
 
   return (
@@ -37,7 +45,12 @@ function LessonMarkdown({ content, lessonSlug }: { content: string; lessonSlug: 
           const tablature = tablatureBlocks.find((block) => block.startLine === startLine);
 
           return tablature ? (
-            <ExerciseTablature exerciseId={tablature.id} exerciseTitle={tablature.title}>
+            <ExerciseTablature
+              exerciseId={tablature.id}
+              exerciseTitle={tablature.title}
+              lessonId={lessonSlug}
+              lessonTitle={lessonTitle}
+            >
               {children}
             </ExerciseTablature>
           ) : (
@@ -80,7 +93,11 @@ export default async function LessonsPage({ searchParams }: LessonsPageProps) {
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
           {selectedLesson ? (
             <div className="min-w-0 space-y-5">
-              <LessonMarkdown content={selectedLesson.content} lessonSlug={selectedLesson.slug} />
+              <LessonMarkdown
+                content={selectedLesson.content}
+                lessonSlug={selectedLesson.slug}
+                lessonTitle={selectedLesson.title}
+              />
             </div>
           ) : (
             <p className="text-white/80">Add Markdown files to content/lessons to create lessons.</p>
