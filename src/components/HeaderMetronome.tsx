@@ -21,9 +21,9 @@ function positiveInteger(value: string, fallback: number) {
   return Number.isFinite(parsed) && parsed >= 1 ? Math.round(parsed) : fallback;
 }
 
-function nonNegativeInteger(value: string, fallback: number) {
+function signedInteger(value: string, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed) : fallback;
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }
 
 export default function HeaderMetronome() {
@@ -49,7 +49,7 @@ export default function HeaderMetronome() {
         const storedBpm = positiveInteger(String(settings.bpm), DEFAULT_BPM);
         const storedNumerator = positiveInteger(String(settings.numerator), DEFAULT_NUMERATOR);
         const storedDenominator = positiveInteger(String(settings.denominator), DEFAULT_DENOMINATOR);
-        const storedIncrement = nonNegativeInteger(String(settings.increment), 0);
+        const storedIncrement = signedInteger(String(settings.increment), 0);
         setBpm(storedBpm);
         setNumerator(storedNumerator);
         setDenominator(storedDenominator);
@@ -107,7 +107,7 @@ export default function HeaderMetronome() {
   };
 
   const commitIncrement = () => {
-    const next = nonNegativeInteger(incrementInput, increment);
+    const next = signedInteger(incrementInput, increment);
     setIncrement(next);
     setIncrementInput(String(next));
   };
@@ -115,13 +115,13 @@ export default function HeaderMetronome() {
   const stopMetronome = () => {
     setIsRunning(false);
     setCurrentBeat(0);
-    const appliedIncrement = nonNegativeInteger(incrementInput, increment);
+    const appliedIncrement = signedInteger(incrementInput, increment);
     setIncrement(appliedIncrement);
     setIncrementInput(String(appliedIncrement));
     if (appliedIncrement === 0) return;
 
     setBpm((current) => {
-      const next = current + appliedIncrement;
+      const next = Math.max(1, current + appliedIncrement);
       setBpmInput(String(next));
       return next;
     });
@@ -134,7 +134,7 @@ export default function HeaderMetronome() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className={`flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+        className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
           isRunning ? "border-amber-300/70 bg-amber-300 text-slate-950" : "border-white/20 bg-white/10 hover:bg-white/20"
         }`}
         aria-expanded={isOpen}
@@ -160,7 +160,7 @@ export default function HeaderMetronome() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 items-end gap-4">
             <fieldset>
               <legend className="mb-2 text-sm font-medium text-white/75">Time signature</legend>
               <div className="flex items-center gap-2">
@@ -193,17 +193,18 @@ export default function HeaderMetronome() {
             </fieldset>
 
             <div>
-              <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo</label>
+              <label htmlFor="metronome-increment" className="mb-2 block text-sm font-medium text-white/75">
+                Increment ±
+              </label>
               <div className="relative">
                 <input
-                  id="metronome-tempo"
+                  id="metronome-increment"
                   type="number"
                   inputMode="numeric"
-                  min="1"
-                  value={bpmInput}
-                  onChange={(event) => setBpmInput(event.target.value)}
-                  onBlur={commitBpm}
-                  onKeyDown={(event) => event.key === "Enter" && commitBpm()}
+                  value={incrementInput}
+                  onChange={(event) => setIncrementInput(event.target.value)}
+                  onBlur={commitIncrement}
+                  onKeyDown={(event) => event.key === "Enter" && commitIncrement()}
                   className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-3 pr-12 text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">BPM</span>
@@ -212,19 +213,17 @@ export default function HeaderMetronome() {
           </div>
 
           <div className="mt-4">
-            <label htmlFor="metronome-increment" className="mb-2 block text-sm font-medium text-white/75">
-              Tempo increment after stop
-            </label>
+            <label htmlFor="metronome-tempo" className="mb-2 block text-sm font-medium text-white/75">Tempo</label>
             <div className="relative">
               <input
-                id="metronome-increment"
+                id="metronome-tempo"
                 type="number"
                 inputMode="numeric"
-                min="0"
-                value={incrementInput}
-                onChange={(event) => setIncrementInput(event.target.value)}
-                onBlur={commitIncrement}
-                onKeyDown={(event) => event.key === "Enter" && commitIncrement()}
+                min="1"
+                value={bpmInput}
+                onChange={(event) => setBpmInput(event.target.value)}
+                onBlur={commitBpm}
+                onKeyDown={(event) => event.key === "Enter" && commitBpm()}
                 className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-3 pr-12 text-lg font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/50">BPM</span>
