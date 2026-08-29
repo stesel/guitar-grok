@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Metronome from "./Metronome";
 import { START_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
+import { appendPracticeRecord, type PracticeRecord } from "@/src/lib/practiceHistory";
 
 const STORAGE_KEY = "guitar-grok-metronome";
 const DEFAULT_BPM = 120;
@@ -15,6 +16,12 @@ interface StoredSettings {
   numerator: number;
   denominator: number;
   increment: number;
+}
+
+interface ActivePracticeSession {
+  exercise: StartExerciseDetail;
+  startedAt: number;
+  bpm: number;
 }
 
 function positiveInteger(value: string, fallback: number) {
@@ -42,10 +49,15 @@ export default function HeaderMetronome() {
   const [incrementInput, setIncrementInput] = useState("0");
   const [activeExercise, setActiveExercise] = useState<StartExerciseDetail | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const isRunningRef = useRef(false);
+  const pendingExerciseRef = useRef<StartExerciseDetail | null>(null);
+  const practiceSessionRef = useRef<ActivePracticeSession | null>(null);
 
   useEffect(() => {
     const selectExercise = (event: Event) => {
+      if (isRunningRef.current) return;
       const { detail } = event as CustomEvent<StartExerciseDetail>;
+      pendingExerciseRef.current = detail;
       setActiveExercise(detail);
       setIsOpen(true);
     };
@@ -125,8 +137,30 @@ export default function HeaderMetronome() {
   };
 
   const stopMetronome = () => {
+    const session = practiceSessionRef.current;
+    practiceSessionRef.current = null;
+    pendingExerciseRef.current = null;
+    isRunningRef.current = false;
     setIsRunning(false);
     setCurrentBeat(0);
+    if (session) {
+      const durationMilliseconds = Date.now() - session.startedAt;
+      if (durationMilliseconds >= 2_000) {
+        const record: PracticeRecord = {
+          id: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `practice-${session.startedAt}-${Math.random().toString(36).slice(2)}`,
+          exerciseId: session.exercise.exerciseId,
+          exerciseTitle: session.exercise.exerciseTitle,
+          lessonSlug: session.exercise.lessonSlug,
+          lessonTitle: session.exercise.lessonTitle,
+          startedAt: new Date(session.startedAt).toISOString(),
+          durationSeconds: Math.max(2, Math.round(durationMilliseconds / 1_000)),
+          bpm: session.bpm,
+        };
+        appendPracticeRecord(record);
+      }
+    }
     const appliedIncrement = signedInteger(incrementInput, increment);
     setIncrement(appliedIncrement);
     setIncrementInput(String(appliedIncrement));
@@ -137,6 +171,17 @@ export default function HeaderMetronome() {
       setBpmInput(String(next));
       return next;
     });
+  };
+
+  const startMetronome = () => {
+    isRunningRef.current = true;
+    setIsRunning(true);
+    const exercise = pendingExerciseRef.current;
+    pendingExerciseRef.current = null;
+    if (!exercise) setActiveExercise(null);
+    practiceSessionRef.current = exercise
+      ? { exercise, startedAt: Date.now(), bpm }
+      : null;
   };
 
   const visibleBeats = Math.min(numerator, MAX_VISIBLE_BEATS);
@@ -272,7 +317,7 @@ export default function HeaderMetronome() {
             numerator={numerator}
             denominator={denominator}
             onBeat={setCurrentBeat}
-            onStart={() => setIsRunning(true)}
+            onStart={startMetronome}
             onStop={stopMetronome}
             startEventName={START_EXERCISE_EVENT}
           />

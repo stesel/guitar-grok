@@ -21,7 +21,15 @@ export default function Header() {
             <div className="text-xs text-white/70">Create · Schedule · Practice</div>
           </div>
         </Link>
-        <HeaderMetronome />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/history"
+            className="inline-flex min-h-10 items-center rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            History
+          </Link>
+          <HeaderMetronome />
+        </div>
       </div>
     </header>
   );
