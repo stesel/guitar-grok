@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Metronome from "./Metronome";
-import { START_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
+import { PREPARE_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
 import { appendPracticeRecord, type PracticeRecord } from "@/src/lib/practiceHistory";
 
 const STORAGE_KEY = "guitar-grok-metronome";
@@ -61,8 +61,8 @@ export default function HeaderMetronome() {
       setActiveExercise(detail);
       setIsOpen(true);
     };
-    window.addEventListener(START_EXERCISE_EVENT, selectExercise);
-    return () => window.removeEventListener(START_EXERCISE_EVENT, selectExercise);
+    window.addEventListener(PREPARE_EXERCISE_EVENT, selectExercise);
+    return () => window.removeEventListener(PREPARE_EXERCISE_EVENT, selectExercise);
   }, []);
 
   useEffect(() => {
@@ -319,7 +319,6 @@ export default function HeaderMetronome() {
             onBeat={setCurrentBeat}
             onStart={startMetronome}
             onStop={stopMetronome}
-            startEventName={START_EXERCISE_EVENT}
           />
       </section>
     </div>

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { getTablatureBlocks, type TablatureBlock as TablatureBlockInfo } from "@/src/lib/lessonTablature";
-import { START_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
+import { PREPARE_EXERCISE_EVENT, type StartExerciseDetail } from "@/src/lib/metronomeEvents";
 
 interface LessonMarkdownProps {
   content: string;
@@ -30,7 +30,7 @@ function TablatureBlock({
       lessonSlug,
       lessonTitle,
     };
-    window.dispatchEvent(new CustomEvent<StartExerciseDetail>(START_EXERCISE_EVENT, { detail }));
+    window.dispatchEvent(new CustomEvent<StartExerciseDetail>(PREPARE_EXERCISE_EVENT, { detail }));
   };
 
   return (
@@ -48,9 +48,9 @@ function TablatureBlock({
           type="button"
           onClick={startExercise}
           className="shrink-0 cursor-pointer rounded-lg bg-amber-300 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          aria-label={`Start ${exercise.title} with metronome`}
+          aria-label={`Prepare ${exercise.title} with metronome`}
         >
-          ▶ Start
+          ▶ Practice
         </button>
       </figcaption>
       <pre className="max-w-full overflow-x-auto p-4 text-sm leading-6 text-white/90">{children}</pre>
