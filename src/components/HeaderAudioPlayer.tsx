@@ -7,6 +7,11 @@ interface AudioTrack {
   url: string;
 }
 
+interface AudioGraph {
+  context: AudioContext;
+  gain: GainNode;
+}
+
 const VOLUME_STORAGE_KEY = "guitar-grok-audio-volume";
 
 function formatTime(seconds: number) {
@@ -34,6 +39,7 @@ export default function HeaderAudioPlayer() {
   const [error, setError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioGraphRef = useRef<AudioGraph | null>(null);
 
   const currentTrack = tracks[currentIndex];
 
@@ -64,9 +70,17 @@ export default function HeaderAudioPlayer() {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) audio.volume = volume;
+    const graph = audioGraphRef.current;
+    if (graph) graph.gain.gain.setValueAtTime(volume, graph.context.currentTime);
+    else if (audio) audio.volume = volume;
     window.localStorage.setItem(VOLUME_STORAGE_KEY, String(volume));
   }, [volume]);
+
+  useEffect(() => () => {
+    const graph = audioGraphRef.current;
+    audioGraphRef.current = null;
+    if (graph) void graph.context.close();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -86,9 +100,30 @@ export default function HeaderAudioPlayer() {
     };
   }, [isOpen]);
 
+  const ensureAudioGraph = async () => {
+    const audio = audioRef.current;
+    if (!audio || typeof AudioContext === "undefined") return;
+
+    if (!audioGraphRef.current) {
+      const context = new AudioContext();
+      const source = context.createMediaElementSource(audio);
+      const gain = context.createGain();
+      gain.gain.value = volume;
+      source.connect(gain);
+      gain.connect(context.destination);
+      audio.volume = 1;
+      audioGraphRef.current = { context, gain };
+    }
+
+    const graph = audioGraphRef.current;
+    graph.gain.gain.setValueAtTime(volume, graph.context.currentTime);
+    if (graph.context.state === "suspended") await graph.context.resume();
+  };
+
   const play = async () => {
     if (!currentTrack || !audioRef.current) return;
     try {
+      await ensureAudioGraph();
       await audioRef.current.play();
       setError(null);
     } catch {
