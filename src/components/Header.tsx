@@ -35,8 +35,8 @@ export default function Header() {
             <span className="hidden sm:inline">History</span>
             <span className="sm:hidden" aria-hidden="true">H</span>
           </Link>
-          <HeaderAudioPlayer />
           <HeaderMetronome />
+          <HeaderAudioPlayer />
         </div>
       </div>
     </header>
