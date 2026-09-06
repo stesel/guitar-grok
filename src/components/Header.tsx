@@ -8,6 +8,11 @@ const HeaderMetronome = dynamic(() => import("./HeaderMetronome"), {
   loading: () => <div className="h-10 w-28 animate-pulse rounded-xl bg-white/10" aria-label="Loading metronome" />,
 });
 
+const HeaderAudioPlayer = dynamic(() => import("./HeaderAudioPlayer"), {
+  ssr: false,
+  loading: () => <div className="h-10 w-10 animate-pulse rounded-xl bg-white/10" aria-label="Loading audio player" />,
+});
+
 export default function Header() {
   return (
     <header className="sticky top-0 z-20 border-b border-white/20 bg-indigo-950/80 backdrop-blur-xl">
@@ -24,10 +29,13 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <Link
             href="/history"
+            aria-label="History"
             className="inline-flex min-h-10 items-center rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            History
+            <span className="hidden sm:inline">History</span>
+            <span className="sm:hidden" aria-hidden="true">H</span>
           </Link>
+          <HeaderAudioPlayer />
           <HeaderMetronome />
         </div>
       </div>
