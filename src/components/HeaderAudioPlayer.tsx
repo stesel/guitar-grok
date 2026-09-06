@@ -17,6 +17,12 @@ function formatTime(seconds: number) {
   return `${minutes}:${String(wholeSeconds % 60).padStart(2, "0")}`;
 }
 
+function readDuration(audio: HTMLAudioElement) {
+  if (Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+  if (audio.seekable.length > 0) return audio.seekable.end(audio.seekable.length - 1);
+  return 0;
+}
+
 export default function HeaderAudioPlayer() {
   const [isOpen, setIsOpen] = useState(false);
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
@@ -130,6 +136,11 @@ export default function HeaderAudioPlayer() {
     selectTrack(currentIndex + 1, true);
   };
 
+  const syncDuration = (audio: HTMLAudioElement) => {
+    const nextDuration = readDuration(audio);
+    if (nextDuration > 0) setDuration(nextDuration);
+  };
+
   return (
     <div ref={panelRef} className="relative">
       <button
@@ -160,9 +171,14 @@ export default function HeaderAudioPlayer() {
           preload="metadata"
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-          onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
-          onDurationChange={(event) => setDuration(event.currentTarget.duration)}
+          onTimeUpdate={(event) => {
+            setCurrentTime(event.currentTarget.currentTime);
+            syncDuration(event.currentTarget);
+          }}
+          onLoadedMetadata={(event) => syncDuration(event.currentTarget)}
+          onLoadedData={(event) => syncDuration(event.currentTarget)}
+          onDurationChange={(event) => syncDuration(event.currentTarget)}
+          onProgress={(event) => syncDuration(event.currentTarget)}
           onEnded={playNext}
           onError={() => currentTrack && setError("This audio file could not be played.")}
         />
