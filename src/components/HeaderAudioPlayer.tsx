@@ -7,7 +7,6 @@ interface AudioTrack {
   url: string;
 }
 
-const SKIP_SECONDS = 10;
 const VOLUME_STORAGE_KEY = "guitar-grok-audio-volume";
 
 function formatTime(seconds: number) {
@@ -107,12 +106,6 @@ export default function HeaderAudioPlayer() {
     setCurrentTime(0);
   };
 
-  const skip = (seconds: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = Math.min(Math.max(0, audio.currentTime + seconds), duration || 0);
-  };
-
   const selectTrack = (index: number, autoplay = false) => {
     setCurrentIndex(index);
     setCurrentTime(0);
@@ -141,8 +134,31 @@ export default function HeaderAudioPlayer() {
     if (nextDuration > 0) setDuration(nextDuration);
   };
 
+  const togglePlayback = () => {
+    if (isPlaying) pause();
+    else void play();
+  };
+
   return (
     <div ref={panelRef} className="relative">
+      <audio
+        ref={audioRef}
+        src={currentTrack?.url}
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onTimeUpdate={(event) => {
+          setCurrentTime(event.currentTarget.currentTime);
+          syncDuration(event.currentTarget);
+        }}
+        onLoadedMetadata={(event) => syncDuration(event.currentTarget)}
+        onLoadedData={(event) => syncDuration(event.currentTarget)}
+        onDurationChange={(event) => syncDuration(event.currentTarget)}
+        onProgress={(event) => syncDuration(event.currentTarget)}
+        onEnded={playNext}
+        onError={() => currentTrack && setError("This audio file could not be played.")}
+      />
+
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
@@ -165,24 +181,6 @@ export default function HeaderAudioPlayer() {
           isOpen ? "block" : "hidden"
         }`}
       >
-        <audio
-          ref={audioRef}
-          src={currentTrack?.url}
-          preload="metadata"
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onTimeUpdate={(event) => {
-            setCurrentTime(event.currentTarget.currentTime);
-            syncDuration(event.currentTarget);
-          }}
-          onLoadedMetadata={(event) => syncDuration(event.currentTarget)}
-          onLoadedData={(event) => syncDuration(event.currentTarget)}
-          onDurationChange={(event) => syncDuration(event.currentTarget)}
-          onProgress={(event) => syncDuration(event.currentTarget)}
-          onEnded={playNext}
-          onError={() => currentTrack && setError("This audio file could not be played.")}
-        />
-
         <div className="mb-4 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Audio player</h2>
@@ -223,13 +221,12 @@ export default function HeaderAudioPlayer() {
               <span>-{formatTime(Math.max(0, duration - currentTime))}</span>
             </div>
 
-            <div className="my-4 grid grid-cols-7 gap-1" aria-label="Playback controls">
+            <div className="my-4 grid grid-cols-4 gap-2" aria-label="Playback controls">
               <TransportButton label="Previous track" onClick={() => changeTrack(-1)}>◀|</TransportButton>
-              <TransportButton label={`Rewind ${SKIP_SECONDS} seconds`} onClick={() => skip(-SKIP_SECONDS)}>−10</TransportButton>
-              <TransportButton label="Play" onClick={() => void play()} active={isPlaying}>▶</TransportButton>
-              <TransportButton label="Pause" onClick={pause}>Ⅱ</TransportButton>
+              <TransportButton label={isPlaying ? "Pause" : "Play"} onClick={togglePlayback} active={isPlaying}>
+                {isPlaying ? "Ⅱ" : "▶"}
+              </TransportButton>
               <TransportButton label="Stop" onClick={stop}>■</TransportButton>
-              <TransportButton label={`Forward ${SKIP_SECONDS} seconds`} onClick={() => skip(SKIP_SECONDS)}>+10</TransportButton>
               <TransportButton label="Next track" onClick={() => changeTrack(1)}>|▶</TransportButton>
             </div>
 
