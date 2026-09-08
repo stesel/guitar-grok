@@ -12,16 +12,6 @@ interface AudioGraph {
   gain: GainNode;
 }
 
-interface WakeLockSentinelLike {
-  release: () => Promise<void>;
-}
-
-interface WakeLockNavigator extends Navigator {
-  wakeLock?: {
-    request: (type: "screen") => Promise<WakeLockSentinelLike>;
-  };
-}
-
 const VOLUME_STORAGE_KEY = "guitar-grok-audio-volume";
 
 function formatTime(seconds: number) {
@@ -50,7 +40,7 @@ export default function HeaderAudioPlayer() {
   const panelRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioGraphRef = useRef<AudioGraph | null>(null);
-  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const currentTrack = tracks[currentIndex];
 
@@ -122,13 +112,10 @@ export default function HeaderAudioPlayer() {
   };
 
   const requestWakeLock = async () => {
-    if (document.visibilityState !== "visible" || wakeLockRef.current) return;
-
-    const wakeLock = (navigator as WakeLockNavigator).wakeLock;
-    if (!wakeLock) return;
+    if (document.visibilityState !== "visible" || wakeLockRef.current || !("wakeLock" in navigator)) return;
 
     try {
-      wakeLockRef.current = await wakeLock.request("screen");
+      wakeLockRef.current = await navigator.wakeLock.request("screen");
     } catch {
       // Wake Lock is best-effort. Playback should continue even if unavailable.
     }
