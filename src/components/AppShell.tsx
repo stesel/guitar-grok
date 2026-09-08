@@ -16,6 +16,8 @@ export default function AppShell({ children }: AppShellProps) {
         © {currentYear}{" "}
         <a
           href="https://stesel.netlify.app/"
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline decoration-white/40 underline-offset-4 transition-colors hover:text-white"
         >
           Stesel
