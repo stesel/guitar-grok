@@ -6,10 +6,24 @@ interface AppShellProps {
 }
 
 export default function AppShell({ children }: AppShellProps) {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-700 via-indigo-700 to-slate-900 text-white">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-purple-700 via-indigo-700 to-slate-900 text-white">
       <Header />
-      {children}
+      <div className="flex-1">{children}</div>
+      <footer className="px-4 py-6 text-center text-sm text-white/70">
+        © {currentYear}{" "}
+        <a
+          href="https://stesel.netlify.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-white/40 underline-offset-4 transition-colors hover:text-white"
+        >
+          Stesel
+        </a>
+        . All rights reserved.
+      </footer>
     </div>
   );
 }
