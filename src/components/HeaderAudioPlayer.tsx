@@ -12,6 +12,16 @@ interface AudioGraph {
   gain: GainNode;
 }
 
+interface WakeLockSentinelLike {
+  release: () => Promise<void>;
+}
+
+interface WakeLockNavigator extends Navigator {
+  wakeLock?: {
+    request: (type: "screen") => Promise<WakeLockSentinelLike>;
+  };
+}
+
 const VOLUME_STORAGE_KEY = "guitar-grok-audio-volume";
 
 function formatTime(seconds: number) {
@@ -40,6 +50,7 @@ export default function HeaderAudioPlayer() {
   const panelRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioGraphRef = useRef<AudioGraph | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
 
   const currentTrack = tracks[currentIndex];
 
@@ -80,6 +91,10 @@ export default function HeaderAudioPlayer() {
     const graph = audioGraphRef.current;
     audioGraphRef.current = null;
     if (graph) void graph.context.close();
+
+    const wakeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    if (wakeLock) void wakeLock.release().catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -100,12 +115,48 @@ export default function HeaderAudioPlayer() {
     };
   }, [isOpen]);
 
+  const releaseWakeLock = () => {
+    const wakeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    if (wakeLock) void wakeLock.release().catch(() => undefined);
+  };
+
+  const requestWakeLock = async () => {
+    if (document.visibilityState !== "visible" || wakeLockRef.current) return;
+
+    const wakeLock = (navigator as WakeLockNavigator).wakeLock;
+    if (!wakeLock) return;
+
+    try {
+      wakeLockRef.current = await wakeLock.request("screen");
+    } catch {
+      // Wake Lock is best-effort. Playback should continue even if unavailable.
+    }
+  };
+
+  useEffect(() => {
+    if (!isPlaying) {
+      releaseWakeLock();
+      return;
+    }
+
+    void requestWakeLock();
+
+    const reacquireWakeLock = () => {
+      if (document.visibilityState === "visible") void requestWakeLock();
+    };
+
+    document.addEventListener("visibilitychange", reacquireWakeLock);
+    return () => document.removeEventListener("visibilitychange", reacquireWakeLock);
+  }, [isPlaying]);
+
   const ensureAudioGraph = async () => {
     const audio = audioRef.current;
-    if (!audio || typeof AudioContext === "undefined") return;
+    const AudioContextConstructor = window.AudioContext;
+    if (!audio || !AudioContextConstructor) return;
 
     if (!audioGraphRef.current) {
-      const context = new AudioContext();
+      const context = new AudioContextConstructor();
       const source = context.createMediaElementSource(audio);
       const gain = context.createGain();
       gain.gain.value = volume;
@@ -120,11 +171,23 @@ export default function HeaderAudioPlayer() {
     if (graph.context.state === "suspended") await graph.context.resume();
   };
 
+  const applyVolume = (nextVolume: number) => {
+    const clampedVolume = Math.min(1, Math.max(0, nextVolume));
+    const graph = audioGraphRef.current;
+    const audio = audioRef.current;
+
+    if (graph) graph.gain.gain.value = clampedVolume;
+    else if (audio) audio.volume = clampedVolume;
+
+    setVolume(clampedVolume);
+  };
+
   const play = async () => {
     if (!currentTrack || !audioRef.current) return;
     try {
       await ensureAudioGraph();
       await audioRef.current.play();
+      await requestWakeLock();
       setError(null);
     } catch {
       setError("This audio file could not be played.");
@@ -139,6 +202,7 @@ export default function HeaderAudioPlayer() {
     audio.pause();
     audio.currentTime = 0;
     setCurrentTime(0);
+    releaseWakeLock();
   };
 
   const selectTrack = (index: number, autoplay = false) => {
@@ -146,7 +210,7 @@ export default function HeaderAudioPlayer() {
     setCurrentTime(0);
     setDuration(0);
     setError(null);
-    if (autoplay) window.setTimeout(() => void audioRef.current?.play(), 0);
+    if (autoplay) window.setTimeout(() => void play(), 0);
   };
 
   const changeTrack = (direction: -1 | 1) => {
@@ -159,6 +223,7 @@ export default function HeaderAudioPlayer() {
     if (tracks.length < 2 || currentIndex === tracks.length - 1) {
       setIsPlaying(false);
       setCurrentTime(0);
+      releaseWakeLock();
       return;
     }
     selectTrack(currentIndex + 1, true);
@@ -180,6 +245,7 @@ export default function HeaderAudioPlayer() {
         ref={audioRef}
         src={currentTrack?.url}
         preload="metadata"
+        playsInline
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={(event) => {
@@ -274,7 +340,8 @@ export default function HeaderAudioPlayer() {
                 max="1"
                 step="0.01"
                 value={volume}
-                onChange={(event) => setVolume(Number(event.target.value))}
+                onInput={(event) => applyVolume(Number(event.currentTarget.value))}
+                onChange={(event) => applyVolume(Number(event.currentTarget.value))}
                 className="h-2 flex-1 cursor-pointer accent-cyan-300"
               />
               <span className="w-9 text-right text-xs tabular-nums text-white/60">{Math.round(volume * 100)}%</span>
