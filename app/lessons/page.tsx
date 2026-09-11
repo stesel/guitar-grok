@@ -15,13 +15,12 @@ interface LessonsPageProps {
 }
 
 export default async function LessonsPage({ searchParams }: LessonsPageProps) {
-  const allLessons = await getLessons();
-  const lessons = allLessons.filter((lesson) => !lesson.slug.startsWith("horror-metal-"));
+  const lessons = await getLessons("lessons");
   const requestedSlug = searchParams?.lesson;
   const selectedSlug = lessons.some((lesson) => lesson.slug === requestedSlug)
     ? requestedSlug
     : lessons[0]?.slug;
-  const selectedLesson = selectedSlug ? await getLesson(selectedSlug) : null;
+  const selectedLesson = selectedSlug ? await getLesson(selectedSlug, "lessons") : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 overflow-x-hidden px-4 py-8">
