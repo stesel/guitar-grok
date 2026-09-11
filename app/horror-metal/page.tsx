@@ -42,11 +42,14 @@ function LessonMarkdown({ content }: { content: string }) {
 }
 
 export default async function HorrorMetalPage({ searchParams }: HorrorMetalPageProps) {
-  const allLessons = await getLessons();
-  const lessons = allLessons.filter((lesson) => lesson.slug.startsWith("horror-metal-"));
-  const selectedSlug = searchParams?.lesson ?? lessons[0]?.slug;
-  const selectedLesson = selectedSlug ? await getLesson(selectedSlug) : null;
-  const courseLesson = selectedLesson?.slug.startsWith("horror-metal-") ? selectedLesson : null;
+  const lessons = await getLessons("horror-metal-course");
+  const requestedSlug = searchParams?.lesson;
+  const selectedSlug = lessons.some((lesson) => lesson.slug === requestedSlug)
+    ? requestedSlug
+    : lessons[0]?.slug;
+  const selectedLesson = selectedSlug
+    ? await getLesson(selectedSlug, "horror-metal-course")
+    : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 overflow-x-hidden px-4 py-8">
@@ -61,19 +64,21 @@ export default async function HorrorMetalPage({ searchParams }: HorrorMetalPageP
       <div className="grid min-w-0 gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
         <LessonsNav
           lessons={lessons}
-          selectedLessonSlug={courseLesson?.slug ?? lessons[0]?.slug}
-          selectedLessonTitle={courseLesson?.title ?? lessons[0]?.title}
+          selectedLessonSlug={selectedLesson?.slug}
+          selectedLessonTitle={selectedLesson?.title}
           basePath="/horror-metal"
           progressStorageKey="guitar-grok:horror-metal:completed-lessons"
         />
 
         <article className="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-6 md:p-8">
-          {courseLesson ? (
+          {selectedLesson ? (
             <div className="min-w-0 space-y-5">
-              <LessonMarkdown content={courseLesson.content} />
+              <LessonMarkdown content={selectedLesson.content} />
             </div>
           ) : (
-            <p className="text-white/80">Choose a lesson from the course navigation.</p>
+            <p className="text-white/80">
+              Add Markdown files to content/horror-metal-course to create course lessons.
+            </p>
           )}
         </article>
       </div>
