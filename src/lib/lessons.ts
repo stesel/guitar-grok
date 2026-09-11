@@ -10,7 +10,11 @@ export interface Lesson extends LessonSummary {
   content: string;
 }
 
-const lessonsDirectory = path.join(process.cwd(), "content", "lessons");
+export type LessonCollection = "lessons" | "horror-metal-course";
+
+function collectionDirectory(collection: LessonCollection): string {
+  return path.join(process.cwd(), "content", collection);
+}
 
 function fileNameToSlug(fileName: string): string {
   return fileName.replace(/\.md$/, "");
@@ -33,14 +37,17 @@ function titleFromMarkdown(content: string, slug: string): string {
     .join(" ");
 }
 
-export async function getLessons(): Promise<LessonSummary[]> {
-  const files = await readdir(lessonsDirectory);
+export async function getLessons(
+  collection: LessonCollection = "lessons",
+): Promise<LessonSummary[]> {
+  const directory = collectionDirectory(collection);
+  const files = await readdir(directory);
   const markdownFiles = files.filter((file) => file.endsWith(".md")).sort();
 
   return Promise.all(
     markdownFiles.map(async (fileName) => {
       const slug = fileNameToSlug(fileName);
-      const content = await readFile(path.join(lessonsDirectory, fileName), "utf8");
+      const content = await readFile(path.join(directory, fileName), "utf8");
 
       return {
         slug,
@@ -50,7 +57,10 @@ export async function getLessons(): Promise<LessonSummary[]> {
   );
 }
 
-export async function getLesson(slug: string): Promise<Lesson | null> {
+export async function getLesson(
+  slug: string,
+  collection: LessonCollection = "lessons",
+): Promise<Lesson | null> {
   const safeSlug = slug.replace(/[^a-z0-9-]/gi, "");
 
   if (!safeSlug) {
@@ -58,7 +68,10 @@ export async function getLesson(slug: string): Promise<Lesson | null> {
   }
 
   try {
-    const content = await readFile(path.join(lessonsDirectory, `${safeSlug}.md`), "utf8");
+    const content = await readFile(
+      path.join(collectionDirectory(collection), `${safeSlug}.md`),
+      "utf8",
+    );
 
     return {
       slug: safeSlug,
