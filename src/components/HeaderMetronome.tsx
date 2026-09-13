@@ -9,6 +9,8 @@ const STORAGE_KEY = "guitar-grok-metronome";
 const DEFAULT_BPM = 120;
 const DEFAULT_NUMERATOR = 4;
 const DEFAULT_DENOMINATOR = 4;
+const DEFAULT_TIMER_MINUTES = 5;
+const TIMER_PRESETS = [1, 3, 5, 10] as const;
 const MAX_VISIBLE_BEATS = 16;
 
 interface StoredSettings {
@@ -16,6 +18,7 @@ interface StoredSettings {
   numerator: number;
   denominator: number;
   increment: number;
+  timerMinutes: number;
 }
 
 interface ActivePracticeSession {
@@ -34,6 +37,13 @@ function signedInteger(value: string, fallback: number) {
   return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }
 
+function formatTimer(seconds: number) {
+  const safeSeconds = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainder = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
 export default function HeaderMetronome() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -47,11 +57,38 @@ export default function HeaderMetronome() {
   const [numeratorInput, setNumeratorInput] = useState(String(DEFAULT_NUMERATOR));
   const [denominatorInput, setDenominatorInput] = useState(String(DEFAULT_DENOMINATOR));
   const [incrementInput, setIncrementInput] = useState("0");
+  const [timerMinutes, setTimerMinutes] = useState(DEFAULT_TIMER_MINUTES);
+  const [timerMinutesInput, setTimerMinutesInput] = useState(String(DEFAULT_TIMER_MINUTES));
+  const [timerRemaining, setTimerRemaining] = useState(DEFAULT_TIMER_MINUTES * 60);
+  const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
+  const [timerState, setTimerState] = useState<"ready" | "running" | "paused" | "complete">("ready");
   const [activeExercise, setActiveExercise] = useState<StartExerciseDetail | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const isRunningRef = useRef(false);
   const pendingExerciseRef = useRef<StartExerciseDetail | null>(null);
   const practiceSessionRef = useRef<ActivePracticeSession | null>(null);
+  const timerAudioContextRef = useRef<AudioContext | null>(null);
+
+  const playCompletionChime = () => {
+    const AudioContextConstructor = window.AudioContext;
+    const audioContext = timerAudioContextRef.current ?? new AudioContextConstructor();
+    timerAudioContextRef.current = audioContext;
+    const startAt = audioContext.currentTime;
+    [659.25, 783.99, 1046.5].forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const noteStart = startAt + index * 0.16;
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.28, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.35);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + 0.36);
+    });
+  };
 
   useEffect(() => {
     const selectExercise = (event: Event) => {
@@ -74,6 +111,7 @@ export default function HeaderMetronome() {
         const storedNumerator = positiveInteger(String(settings.numerator), DEFAULT_NUMERATOR);
         const storedDenominator = positiveInteger(String(settings.denominator), DEFAULT_DENOMINATOR);
         const storedIncrement = signedInteger(String(settings.increment), 0);
+        const storedTimerMinutes = positiveInteger(String(settings.timerMinutes), DEFAULT_TIMER_MINUTES);
         setBpm(storedBpm);
         setNumerator(storedNumerator);
         setDenominator(storedDenominator);
@@ -82,6 +120,9 @@ export default function HeaderMetronome() {
         setNumeratorInput(String(storedNumerator));
         setDenominatorInput(String(storedDenominator));
         setIncrementInput(String(storedIncrement));
+        setTimerMinutes(storedTimerMinutes);
+        setTimerMinutesInput(String(storedTimerMinutes));
+        setTimerRemaining(storedTimerMinutes * 60);
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
@@ -91,8 +132,29 @@ export default function HeaderMetronome() {
 
   useEffect(() => {
     if (!settingsLoaded) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator, increment }));
-  }, [bpm, numerator, denominator, increment, settingsLoaded]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator, increment, timerMinutes }));
+  }, [bpm, numerator, denominator, increment, timerMinutes, settingsLoaded]);
+
+  useEffect(() => {
+    if (timerState !== "running" || timerEndAt === null) return;
+
+    const updateRemaining = () => {
+      const nextRemaining = Math.max(0, (timerEndAt - Date.now()) / 1_000);
+      setTimerRemaining(nextRemaining);
+      if (nextRemaining > 0) return;
+      setTimerEndAt(null);
+      setTimerState("complete");
+      playCompletionChime();
+    };
+
+    updateRemaining();
+    const intervalId = window.setInterval(updateRemaining, 250);
+    return () => window.clearInterval(intervalId);
+  }, [timerEndAt, timerState]);
+
+  useEffect(() => () => {
+    void timerAudioContextRef.current?.close();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -134,6 +196,43 @@ export default function HeaderMetronome() {
     const next = signedInteger(incrementInput, increment);
     setIncrement(next);
     setIncrementInput(String(next));
+  };
+
+  const selectTimerDuration = (minutes: number) => {
+    if (timerState === "running") return;
+    setTimerMinutes(minutes);
+    setTimerMinutesInput(String(minutes));
+    setTimerRemaining(minutes * 60);
+    setTimerState("ready");
+  };
+
+  const commitTimerMinutes = () => {
+    const next = positiveInteger(timerMinutesInput, timerMinutes);
+    selectTimerDuration(next);
+  };
+
+  const startTimer = () => {
+    if (timerState === "running") return;
+    const duration = timerState === "paused" ? timerRemaining : timerMinutes * 60;
+    const audioContext = timerAudioContextRef.current ?? new window.AudioContext();
+    timerAudioContextRef.current = audioContext;
+    if (audioContext.state === "suspended") void audioContext.resume();
+    setTimerRemaining(duration);
+    setTimerEndAt(Date.now() + duration * 1_000);
+    setTimerState("running");
+  };
+
+  const pauseTimer = () => {
+    if (timerState !== "running" || timerEndAt === null) return;
+    setTimerRemaining(Math.max(0, (timerEndAt - Date.now()) / 1_000));
+    setTimerEndAt(null);
+    setTimerState("paused");
+  };
+
+  const resetTimer = () => {
+    setTimerEndAt(null);
+    setTimerRemaining(timerMinutes * 60);
+    setTimerState("ready");
   };
 
   const stopMetronome = () => {
@@ -200,6 +299,9 @@ export default function HeaderMetronome() {
         <span aria-hidden="true">{isRunning ? "●" : "♪"}</span>
         <span>{bpm} BPM</span>
         <span className={isRunning ? "text-slate-700" : "text-white/60"}>{numerator}/{denominator}</span>
+        {timerState === "running" && (
+          <span className={isRunning ? "text-slate-700" : "text-amber-200"}>{formatTimer(timerRemaining)}</span>
+        )}
       </button>
 
       <section
@@ -320,6 +422,66 @@ export default function HeaderMetronome() {
             onStart={startMetronome}
             onStop={stopMetronome}
           />
+
+          <div className="mt-5 border-t border-white/20 pt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-white/75">Training Timer</h3>
+              <span className="text-xs text-white/50" aria-live="polite">
+                {timerState === "running" ? "Running" : timerState === "paused" ? "Paused" : timerState === "complete" ? "Complete" : "Ready"}
+              </span>
+            </div>
+
+            <div className="my-4 text-center font-mono text-4xl font-semibold tabular-nums" aria-live="off">
+              {formatTimer(timerRemaining)}
+            </div>
+
+            <div className="grid grid-cols-4 gap-2" aria-label="Timer presets">
+              {TIMER_PRESETS.map((minutes) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  disabled={timerState === "running"}
+                  onClick={() => selectTimerDuration(minutes)}
+                  className={`min-h-10 cursor-pointer rounded-lg border px-2 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    timerMinutes === minutes ? "border-amber-300 bg-amber-300 text-slate-950" : "border-white/20 bg-white/10 hover:bg-white/20"
+                  }`}
+                >
+                  {minutes}m
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <label htmlFor="training-timer-minutes" className="mb-1 block text-xs text-white/60">Custom minutes</label>
+                <input
+                  id="training-timer-minutes"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  disabled={timerState === "running"}
+                  value={timerMinutesInput}
+                  onChange={(event) => setTimerMinutesInput(event.target.value)}
+                  onBlur={commitTimerMinutes}
+                  onKeyDown={(event) => event.key === "Enter" && commitTimerMinutes()}
+                  className="min-h-10 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              {timerState === "running" ? (
+                <button type="button" onClick={pauseTimer} className="min-h-10 cursor-pointer rounded-lg bg-amber-300 px-4 py-2 font-semibold text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                  Pause
+                </button>
+              ) : (
+                <button type="button" onClick={startTimer} className="min-h-10 cursor-pointer rounded-lg bg-amber-300 px-4 py-2 font-semibold text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                  {timerState === "paused" ? "Resume" : timerState === "complete" ? "Restart" : "Start timer"}
+                </button>
+              )}
+              <button type="button" onClick={resetTimer} disabled={timerState === "ready"} className="min-h-10 cursor-pointer rounded-lg border border-white/20 bg-white/10 px-3 py-2 font-semibold hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50">
+                Reset
+              </button>
+            </div>
+          </div>
       </section>
     </div>
   );
