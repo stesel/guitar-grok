@@ -29,6 +29,8 @@ interface ActivePracticeSession {
   bpm: number;
 }
 
+type PracticeToolTab = "metronome" | "timer";
+
 function positiveInteger(value: string, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 1 ? Math.round(parsed) : fallback;
@@ -66,6 +68,7 @@ function parseTimerInput(value: string, fallbackSeconds: number) {
 
 export default function HeaderMetronome() {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<PracticeToolTab>("metronome");
   const [isRunning, setIsRunning] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
@@ -88,6 +91,8 @@ export default function HeaderMetronome() {
   const pendingExerciseRef = useRef<StartExerciseDetail | null>(null);
   const practiceSessionRef = useRef<ActivePracticeSession | null>(null);
   const timerAudioContextRef = useRef<AudioContext | null>(null);
+  const metronomeTabRef = useRef<HTMLButtonElement>(null);
+  const timerTabRef = useRef<HTMLButtonElement>(null);
 
   const playCompletionChime = () => {
     const AudioContextConstructor = window.AudioContext;
@@ -116,6 +121,7 @@ export default function HeaderMetronome() {
       const { detail } = event as CustomEvent<StartExerciseDetail>;
       pendingExerciseRef.current = detail;
       setActiveExercise(detail);
+      setActiveTab("metronome");
       setIsOpen(true);
     };
     window.addEventListener(PREPARE_EXERCISE_EVENT, selectExercise);
@@ -199,6 +205,21 @@ export default function HeaderMetronome() {
     const next = positiveInteger(bpmInput, bpm);
     setBpm(next);
     setBpmInput(String(next));
+  };
+
+  const selectTab = (tab: PracticeToolTab, focus = false) => {
+    setActiveTab(tab);
+    if (focus) {
+      window.requestAnimationFrame(() => {
+        (tab === "metronome" ? metronomeTabRef : timerTabRef).current?.focus();
+      });
+    }
+  };
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    selectTab(activeTab === "metronome" ? "timer" : "metronome", true);
   };
 
   const commitNumerator = () => {
@@ -327,25 +348,69 @@ export default function HeaderMetronome() {
 
       <section
         id="global-metronome-panel"
-        aria-label="Metronome settings"
+        aria-label="Practice tools"
         aria-hidden={!isOpen}
         className={`fixed left-1/2 top-[4.75rem] w-[min(23rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-white/20 bg-slate-950/95 p-5 shadow-2xl backdrop-blur-xl sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.75rem)] sm:translate-x-0 ${
           isOpen ? "block" : "hidden"
         }`}
       >
-          <div className="mb-5 min-w-0">
+          <div className="mb-4 min-w-0">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold">Metronome</h2>
+              <h2 className="text-lg font-semibold">Practice tools</h2>
               <span className="shrink-0 whitespace-nowrap text-sm text-white/60" aria-live="polite">
-                {isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"}
+                {activeTab === "metronome"
+                  ? isRunning ? `Beat ${currentBeat} of ${numerator}` : "Ready"
+                  : timerState === "running" ? "Running" : timerState === "paused" ? "Paused" : timerState === "complete" ? "Complete" : "Ready"}
               </span>
             </div>
-            {activeExercise && (
-              <p className="mt-1 truncate text-sm text-amber-200" title={activeExercise.exerciseTitle}>
-                {activeExercise.exerciseTitle}
-              </p>
-            )}
           </div>
+
+          <div className="mb-5 grid grid-cols-2 rounded-xl bg-white/5 p-1" role="tablist" aria-label="Practice tool">
+            <button
+              ref={metronomeTabRef}
+              id="metronome-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "metronome"}
+              aria-controls="metronome-tab-panel"
+              tabIndex={activeTab === "metronome" ? 0 : -1}
+              onClick={() => selectTab("metronome")}
+              onKeyDown={handleTabKeyDown}
+              className={`min-h-10 cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${
+                activeTab === "metronome" ? "bg-amber-300 text-slate-950 shadow-sm" : "text-white/65 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Metronome{isRunning ? " ●" : ""}
+            </button>
+            <button
+              ref={timerTabRef}
+              id="timer-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "timer"}
+              aria-controls="timer-tab-panel"
+              tabIndex={activeTab === "timer" ? 0 : -1}
+              onClick={() => selectTab("timer")}
+              onKeyDown={handleTabKeyDown}
+              className={`min-h-10 cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${
+                activeTab === "timer" ? "bg-amber-300 text-slate-950 shadow-sm" : "text-white/65 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Timer{timerState === "running" ? ` · ${formatTimer(timerRemaining)}` : ""}
+            </button>
+          </div>
+
+          <div
+            id="metronome-tab-panel"
+            role="tabpanel"
+            aria-labelledby="metronome-tab"
+            className={activeTab === "metronome" ? "block" : "hidden"}
+          >
+          {activeExercise && (
+            <p className="mb-4 truncate text-sm text-amber-200" title={activeExercise.exerciseTitle}>
+              {activeExercise.exerciseTitle}
+            </p>
+          )}
 
           <div className="grid grid-cols-2 items-end gap-4">
             <fieldset>
@@ -443,13 +508,16 @@ export default function HeaderMetronome() {
             onStart={startMetronome}
             onStop={stopMetronome}
           />
+          </div>
 
-          <div className="mt-5 border-t border-white/20 pt-5">
+          <div
+            id="timer-tab-panel"
+            role="tabpanel"
+            aria-labelledby="timer-tab"
+            className={activeTab === "timer" ? "block" : "hidden"}
+          >
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-semibold text-white/75">Training Timer</h3>
-              <span className="text-xs text-white/50" aria-live="polite">
-                {timerState === "running" ? "Running" : timerState === "paused" ? "Paused" : timerState === "complete" ? "Complete" : "Ready"}
-              </span>
             </div>
 
             <div className="my-4 text-center font-mono text-4xl font-semibold tabular-nums" aria-live="off">
