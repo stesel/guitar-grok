@@ -11,6 +11,7 @@ const DEFAULT_NUMERATOR = 4;
 const DEFAULT_DENOMINATOR = 4;
 const DEFAULT_TIMER_MINUTES = 5;
 const TIMER_PRESETS = [1, 3, 5, 10] as const;
+const COMPLETION_CHIME_GAIN = 0.75;
 const MAX_VISIBLE_BEATS = 16;
 
 interface StoredSettings {
@@ -100,7 +101,7 @@ export default function HeaderMetronome() {
       oscillator.type = "sine";
       oscillator.frequency.value = frequency;
       gain.gain.setValueAtTime(0.0001, noteStart);
-      gain.gain.exponentialRampToValueAtTime(0.28, noteStart + 0.02);
+      gain.gain.exponentialRampToValueAtTime(COMPLETION_CHIME_GAIN, noteStart + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.35);
       oscillator.connect(gain);
       gain.connect(audioContext.destination);
