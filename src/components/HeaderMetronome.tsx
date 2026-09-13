@@ -18,7 +18,8 @@ interface StoredSettings {
   numerator: number;
   denominator: number;
   increment: number;
-  timerMinutes: number;
+  timerSeconds?: number;
+  timerMinutes?: number;
 }
 
 interface ActivePracticeSession {
@@ -44,6 +45,24 @@ function formatTimer(seconds: number) {
   return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
+function parseTimerInput(value: string, fallbackSeconds: number) {
+  const trimmed = value.trim();
+  if (!trimmed.includes(":")) {
+    const minutes = Number(trimmed);
+    return Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes * 60) : fallbackSeconds;
+  }
+
+  const parts = trimmed.split(":");
+  if (parts.length !== 2) return fallbackSeconds;
+  const minutes = Number(parts[0]);
+  const seconds = Number(parts[1]);
+  if (!Number.isInteger(minutes) || minutes < 0 || !Number.isInteger(seconds) || seconds < 0 || seconds > 59) {
+    return fallbackSeconds;
+  }
+  const totalSeconds = minutes * 60 + seconds;
+  return totalSeconds > 0 ? totalSeconds : fallbackSeconds;
+}
+
 export default function HeaderMetronome() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -57,8 +76,8 @@ export default function HeaderMetronome() {
   const [numeratorInput, setNumeratorInput] = useState(String(DEFAULT_NUMERATOR));
   const [denominatorInput, setDenominatorInput] = useState(String(DEFAULT_DENOMINATOR));
   const [incrementInput, setIncrementInput] = useState("0");
-  const [timerMinutes, setTimerMinutes] = useState(DEFAULT_TIMER_MINUTES);
-  const [timerMinutesInput, setTimerMinutesInput] = useState(String(DEFAULT_TIMER_MINUTES));
+  const [timerDurationSeconds, setTimerDurationSeconds] = useState(DEFAULT_TIMER_MINUTES * 60);
+  const [timerInput, setTimerInput] = useState(formatTimer(DEFAULT_TIMER_MINUTES * 60));
   const [timerRemaining, setTimerRemaining] = useState(DEFAULT_TIMER_MINUTES * 60);
   const [timerEndAt, setTimerEndAt] = useState<number | null>(null);
   const [timerState, setTimerState] = useState<"ready" | "running" | "paused" | "complete">("ready");
@@ -111,7 +130,8 @@ export default function HeaderMetronome() {
         const storedNumerator = positiveInteger(String(settings.numerator), DEFAULT_NUMERATOR);
         const storedDenominator = positiveInteger(String(settings.denominator), DEFAULT_DENOMINATOR);
         const storedIncrement = signedInteger(String(settings.increment), 0);
-        const storedTimerMinutes = positiveInteger(String(settings.timerMinutes), DEFAULT_TIMER_MINUTES);
+        const legacyTimerSeconds = positiveInteger(String(settings.timerMinutes), DEFAULT_TIMER_MINUTES) * 60;
+        const storedTimerSeconds = positiveInteger(String(settings.timerSeconds), legacyTimerSeconds);
         setBpm(storedBpm);
         setNumerator(storedNumerator);
         setDenominator(storedDenominator);
@@ -120,9 +140,9 @@ export default function HeaderMetronome() {
         setNumeratorInput(String(storedNumerator));
         setDenominatorInput(String(storedDenominator));
         setIncrementInput(String(storedIncrement));
-        setTimerMinutes(storedTimerMinutes);
-        setTimerMinutesInput(String(storedTimerMinutes));
-        setTimerRemaining(storedTimerMinutes * 60);
+        setTimerDurationSeconds(storedTimerSeconds);
+        setTimerInput(formatTimer(storedTimerSeconds));
+        setTimerRemaining(storedTimerSeconds);
       } catch {
         window.localStorage.removeItem(STORAGE_KEY);
       }
@@ -132,8 +152,8 @@ export default function HeaderMetronome() {
 
   useEffect(() => {
     if (!settingsLoaded) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator, increment, timerMinutes }));
-  }, [bpm, numerator, denominator, increment, timerMinutes, settingsLoaded]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm, numerator, denominator, increment, timerSeconds: timerDurationSeconds }));
+  }, [bpm, numerator, denominator, increment, timerDurationSeconds, settingsLoaded]);
 
   useEffect(() => {
     if (timerState !== "running" || timerEndAt === null) return;
@@ -198,22 +218,22 @@ export default function HeaderMetronome() {
     setIncrementInput(String(next));
   };
 
-  const selectTimerDuration = (minutes: number) => {
+  const selectTimerDuration = (seconds: number) => {
     if (timerState === "running") return;
-    setTimerMinutes(minutes);
-    setTimerMinutesInput(String(minutes));
-    setTimerRemaining(minutes * 60);
+    setTimerDurationSeconds(seconds);
+    setTimerInput(formatTimer(seconds));
+    setTimerRemaining(seconds);
     setTimerState("ready");
   };
 
-  const commitTimerMinutes = () => {
-    const next = positiveInteger(timerMinutesInput, timerMinutes);
+  const commitTimerInput = () => {
+    const next = parseTimerInput(timerInput, timerDurationSeconds);
     selectTimerDuration(next);
   };
 
   const startTimer = () => {
     if (timerState === "running") return;
-    const duration = timerState === "paused" ? timerRemaining : timerMinutes * 60;
+    const duration = timerState === "paused" ? timerRemaining : timerDurationSeconds;
     const audioContext = timerAudioContextRef.current ?? new window.AudioContext();
     timerAudioContextRef.current = audioContext;
     if (audioContext.state === "suspended") void audioContext.resume();
@@ -231,7 +251,7 @@ export default function HeaderMetronome() {
 
   const resetTimer = () => {
     setTimerEndAt(null);
-    setTimerRemaining(timerMinutes * 60);
+    setTimerRemaining(timerDurationSeconds);
     setTimerState("ready");
   };
 
@@ -441,9 +461,9 @@ export default function HeaderMetronome() {
                   key={minutes}
                   type="button"
                   disabled={timerState === "running"}
-                  onClick={() => selectTimerDuration(minutes)}
+                  onClick={() => selectTimerDuration(minutes * 60)}
                   className={`min-h-10 cursor-pointer rounded-lg border px-2 py-2 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    timerMinutes === minutes ? "border-amber-300 bg-amber-300 text-slate-950" : "border-white/20 bg-white/10 hover:bg-white/20"
+                    timerDurationSeconds === minutes * 60 ? "border-amber-300 bg-amber-300 text-slate-950" : "border-white/20 bg-white/10 hover:bg-white/20"
                   }`}
                 >
                   {minutes}m
@@ -453,17 +473,17 @@ export default function HeaderMetronome() {
 
             <div className="mt-3 flex items-end gap-3">
               <div className="min-w-0 flex-1">
-                <label htmlFor="training-timer-minutes" className="mb-1 block text-xs text-white/60">Custom minutes</label>
+                <label htmlFor="training-timer-time" className="mb-1 block text-xs text-white/60">Custom time (MM:SS)</label>
                 <input
-                  id="training-timer-minutes"
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
+                  id="training-timer-time"
+                  type="text"
+                  inputMode="text"
+                  placeholder="2:30"
                   disabled={timerState === "running"}
-                  value={timerMinutesInput}
-                  onChange={(event) => setTimerMinutesInput(event.target.value)}
-                  onBlur={commitTimerMinutes}
-                  onKeyDown={(event) => event.key === "Enter" && commitTimerMinutes()}
+                  value={timerInput}
+                  onChange={(event) => setTimerInput(event.target.value)}
+                  onBlur={commitTimerInput}
+                  onKeyDown={(event) => event.key === "Enter" && commitTimerInput()}
                   className="min-h-10 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
